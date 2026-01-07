@@ -1,0 +1,16 @@
+{
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.13",
+  "venvPath": ".",
+  "venv": ".venv",
+  "reportMissingTypeStubs": "error",
+  "reportUnknownArgumentType": "error",
+  "reportUnknownLambdaType": "error",
+  "reportUnknownMemberType": "error",
+  "reportUnknownParameterType": "error",
+  "reportUnknownVariableType": "error",
+  "reportUntypedFunctionDecorator": "error",
+  "reportUnusedImport": "error",
+  "reportUnusedVariable": "error"
+}
+

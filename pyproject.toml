@@ -1,0 +1,13 @@
+[project]
+name = "combinators-py"
+version = "0.1.0"
+authors = ["prostomarkeloff"]
+description = "Declarative way to build systems"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "kungfu",
+]
+
+[tool.uv.sources]
+kungfu = { git = "https://github.com/timoniq/kungfu.git" }
