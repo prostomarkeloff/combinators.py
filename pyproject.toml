@@ -1,7 +1,7 @@
 [project]
 name = "combinators-py"
 version = "0.1.0"
-author = {name = "prostomarkeloff", email="prostomarkeloff@was.there" }
+authors = {name = "prostomarkeloff", email="prostomarkeloff@was.there" }
 description = "Declarative way to build systems"
 readme = "README.md"
 requires-python = ">=3.13"
