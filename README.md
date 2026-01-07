@@ -6,9 +6,47 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Types: pyright strict](https://img.shields.io/badge/types-pyright%20strict-blue)](https://github.com/microsoft/pyright)
 
-> "Make illegal states unrepresentable."
+<p align="center">
+  <strong>"Make illegal states unrepresentable."</strong>
+</p>
 
 ---
+
+```python
+from combinators import flow, lift as L, race_ok, parallel
+
+# 1. Define your units of work (Blueprints, not Tasks)
+fetch_openai = L.call(openai.generate, prompt)
+fetch_anthropic = L.call(anthropic.generate, prompt)
+
+# 2. Compose the Resilient Pipeline
+pipeline = (
+    # Race providers: First success wins.
+    flow(race_ok(fetch_openai, fetch_anthropic))
+    
+    # Policy: Retry rate limits, fast fail on auth errors
+    .retry(
+        times=3,
+        delay_seconds=0.5,
+        retry_on=lambda e: e.is_rate_limit
+    )
+    
+    # SLA: Must respond within 2 seconds
+    .timeout(seconds=2.0)
+    
+    # Quality Control: Switch to Failure Track if answer is unsafe
+    .ensure(
+        predicate=lambda r: r.safety_score > 0.9,
+        error=lambda r: UnsafeContentError(r)
+    )
+
+    .compile()
+)
+
+# 3. Execute. The type system guarantees you handle the result.
+# result: Result[Response, APIError | TimeoutError | UnsafeContentError]
+result = await pipeline
+```
 
 ## The Big Lie
 
@@ -59,7 +97,6 @@ pipeline = (
     flow(L.call(api.get_user, 42))
     .retry(times=3)               # If Failure Track (Error), try again
     .timeout(seconds=5.0)         # If time > 5s, switch to Failure Track (Timeout)
-    .recover(default=GuestUser()) # If Failure Track, switch back to Success Track (Success)
     .compile()
 )
 ```

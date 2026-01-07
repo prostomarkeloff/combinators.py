@@ -171,7 +171,7 @@ Sometimes you want the fastest answer, not just any answer.
 from combinators import race_ok
 
 # Race the primary and the replica.
-# First one to cross the finish line on the Green Track wins.
+# First one to cross the finish line on the Success Track wins.
 fastest_db = race_ok(
     L.call(primary.get, "config"),
     L.call(replica.get, "config")
