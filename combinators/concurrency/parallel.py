@@ -1,9 +1,6 @@
-"""
-Parallel combinators
-====================
+"""Parallel combinators
 
-Комбинаторы для параллельного выполнения с extract + wrap паттерном.
-"""
+Combinators for parallel execution with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -21,12 +18,7 @@ from .._helpers import (
 )
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def parallelM[M, T, E, RawIn, RawOut](
     *interps: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
     extract: Callable[[RawIn], Result[T, E]],
@@ -34,20 +26,7 @@ def parallelM[M, T, E, RawIn, RawOut](
     combine_err: Callable[[E, list[RawIn]], RawOut],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, RawOut]]], M],
 ) -> M:
-    """
-    Generic parallel combinator.
-    
-    Run all concurrently, collect results. Fail-fast on first error.
-    
-    Args:
-        interps: Sequence of computations to run in parallel
-        extract: Function to extract Result[T, E] from each RawIn
-        combine_ok: Function to combine successful results into RawOut
-                    Receives list of (value, raw) pairs to allow log extraction
-        combine_err: Function to create RawOut from first error and all raws
-                     Allows log merging even on failure
-        wrap: Constructor to wrap thunk back into monad M
-    """
+    """Generic parallel combinator."""
 
     async def run() -> RawOut:
         raws: list[RawIn] = await asyncio.gather(*(i() for i in interps))
@@ -66,12 +45,7 @@ def parallelM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def parallel[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[list[T], E]:
     """
     Run all concurrently, collect results. Fail-fast on first error.
@@ -91,13 +65,8 @@ def parallel[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[list[T], E]
         wrap=LazyCoroResult,
     )
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def parallel_w[T, E, W](
+def parallel_writer[T, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
 ) -> LazyCoroResultWriter[list[T], E, W]:
     """
@@ -127,5 +96,4 @@ def parallel_w[T, E, W](
         wrap=wrap_lazy_coro_result_writer,
     )
 
-
-__all__ = ("parallel", "parallel_w", "parallelM")
+__all__ = ("parallel", "parallel_writer", "parallelM")

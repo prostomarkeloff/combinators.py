@@ -1,9 +1,6 @@
-"""
-Timeout combinators
-===================
+"""Timeout combinators
 
-Комбинаторы для ограничения времени выполнения.
-"""
+Combinators for execution time limiting."""
 
 from __future__ import annotations
 
@@ -17,12 +14,7 @@ from .._errors import TimeoutError
 from .._helpers import extract_writer_result, identity
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def timeoutM[M, T, E, RawIn, RawOut](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
     *,
@@ -32,21 +24,7 @@ def timeoutM[M, T, E, RawIn, RawOut](
     on_timeout: Callable[[], RawOut],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, RawOut]]], M],
 ) -> M:
-    """
-    Generic timeout combinator.
-    
-    Fail if takes too long. Adds TimeoutError to error channel.
-    
-    Args:
-        interp: Callable returning Coroutine[RawIn]
-        seconds: Timeout in seconds
-        extract: Function to extract Result[T, E] from RawIn (for success check)
-        widen: Function to widen RawIn -> RawOut (e.g. widen error type)
-        on_timeout: Function to create RawOut when timeout occurs
-        wrap: Constructor to wrap thunk back into monad M
-    
-    NOTE: Timeout changes the error type (E -> E | TimeoutError), so RawIn != RawOut.
-    """
+    """Generic timeout combinator."""
 
     async def run() -> RawOut:
         try:
@@ -57,12 +35,7 @@ def timeoutM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def timeout[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -92,13 +65,8 @@ def timeout[T, E](
         wrap=LazyCoroResult,
     )
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def timeout_w[T, E, W](
+def timeout_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     seconds: float,
@@ -120,9 +88,9 @@ def timeout_w[T, E, W](
         return WriterResult(Error(TimeoutError(seconds)), Log[W]())
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E | TimeoutError, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E | TimeoutError, Log[W]]]]
     ) -> LazyCoroResultWriter[T, E | TimeoutError, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return timeoutM(
         interp,
@@ -133,5 +101,4 @@ def timeout_w[T, E, W](
         wrap=wrap_wr,
     )
 
-
-__all__ = ("timeout", "timeout_w", "timeoutM")
+__all__ = ("timeout", "timeout_writer", "timeoutM")

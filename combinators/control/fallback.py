@@ -1,9 +1,6 @@
-"""
-Fallback combinators
-====================
+"""Fallback combinators
 
-Комбинаторы для fallback логики с extract + wrap паттерном.
-"""
+Combinators for fallback logic with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._helpers import extract_writer_result, identity, wrap_lazy_coro_result_writer
 from ..writer import LazyCoroResultWriter
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def fallbackM[M, T, E, Raw](
     primary: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     secondary: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
@@ -28,17 +20,7 @@ def fallbackM[M, T, E, Raw](
     extract: Callable[[Raw], Result[T, E]],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, Raw]]], M],
 ) -> M:
-    """
-    Generic fallback combinator.
-    
-    Try secondary if primary fails.
-    
-    Args:
-        primary: Primary computation
-        secondary: Fallback computation if primary fails
-        extract: Function to extract Result[T, E] from Raw
-        wrap: Constructor to wrap thunk back into monad M
-    """
+    """Generic fallback combinator."""
 
     async def run() -> Raw:
         raw = await primary()
@@ -51,22 +33,12 @@ def fallbackM[M, T, E, Raw](
 
     return wrap(run)
 
-
 def fallback_chainM[M, T, E, Raw](
     *interps: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     extract: Callable[[Raw], Result[T, E]],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, Raw]]], M],
 ) -> M:
-    """
-    Generic fallback chain combinator.
-    
-    Try each until one succeeds. Returns last error if all fail.
-    
-    Args:
-        interps: Sequence of computations to try
-        extract: Function to extract Result[T, E] from Raw
-        wrap: Constructor to wrap thunk back into monad M
-    """
+    """Generic fallback chain combinator."""
 
     async def run() -> Raw:
         last: Raw | None = None
@@ -84,12 +56,7 @@ def fallback_chainM[M, T, E, Raw](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def fallback[T, E](
     primary: LazyCoroResult[T, E],
     secondary: LazyCoroResult[T, E],
@@ -102,17 +69,12 @@ def fallback[T, E](
         wrap=LazyCoroResult,
     )
 
-
 def fallback_with[T, E](
     primary: LazyCoroResult[T, E],
     *,
     secondary: Callable[[E], LazyCoroResult[T, E]],
 ) -> LazyCoroResult[T, E]:
-    """
-    Compute fallback based on primary's error.
-    
-    NOTE: This variant doesn't use fallbackM because secondary depends on error value.
-    """
+    """Compute fallback based on primary's error."""
 
     async def run() -> Result[T, E]:
         r = await primary()
@@ -124,7 +86,6 @@ def fallback_with[T, E](
 
     return LazyCoroResult(run)
 
-
 def fallback_chain[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[T, E]:
     """Try each until one succeeds. Returns last error if all fail."""
     return fallback_chainM(
@@ -133,21 +94,12 @@ def fallback_chain[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[T, E]
         wrap=LazyCoroResult,
     )
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def fallback_w[T, E, W](
+def fallback_writer[T, E, W](
     primary: LazyCoroResultWriter[T, E, W],
     secondary: LazyCoroResultWriter[T, E, W],
 ) -> LazyCoroResultWriter[T, E, W]:
-    """
-    Try secondary if primary fails.
-    
-    NOTE: If primary fails, its log is discarded. Only successful branch's log is kept.
-    """
+    """Try secondary if primary fails."""
     return fallbackM(
         primary,
         secondary,
@@ -155,28 +107,22 @@ def fallback_w[T, E, W](
         wrap=wrap_lazy_coro_result_writer,
     )
 
-
-def fallback_chain_w[T, E, W](
+def fallback_chain_writer[T, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
 ) -> LazyCoroResultWriter[T, E, W]:
-    """
-    Try each until one succeeds. Returns last error if all fail.
-    
-    NOTE: Only successful branch's log is kept. Failed branches' logs are discarded.
-    """
+    """Try each until one succeeds. Returns last error if all fail."""
     return fallback_chainM(
         *interps,
         extract=extract_writer_result,
         wrap=wrap_lazy_coro_result_writer,
     )
 
-
 __all__ = (
     "fallback",
     "fallback_chain",
     "fallback_with",
-    "fallback_w",
-    "fallback_chain_w",
+    "fallback_writer",
+    "fallback_chain_writer",
     "fallbackM",
     "fallback_chainM",
 )

@@ -1,9 +1,6 @@
-"""
-Batch combinators
-=================
+"""Batch combinators
 
-Комбинаторы для batch обработки с extract + wrap паттерном.
-"""
+Combinators for batch processing with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -17,12 +14,7 @@ from .._helpers import extract_writer_result, merge_logs
 from .._types import NoError
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def batchM[M, A, T, E, RawIn, RawOut](
     items: Sequence[A],
     handler: Callable[[A], Callable[[], Coroutine[typing.Any, typing.Any, RawIn]]],
@@ -64,7 +56,6 @@ def batchM[M, A, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
 def batch_allM[M, A, T, E, RawIn, RawOut](
     items: Sequence[A],
     handler: Callable[[A], Callable[[], Coroutine[typing.Any, typing.Any, RawIn]]],
@@ -100,12 +91,7 @@ def batch_allM[M, A, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def batch[A, T, E](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResult[T, E]],
@@ -135,7 +121,6 @@ def batch[A, T, E](
         wrap=LazyCoroResult,
     )
 
-
 def batch_all[A, T, E](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResult[T, E]],
@@ -157,13 +142,8 @@ def batch_all[A, T, E](
         wrap=LazyCoroResult,
     )
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def batch_w[A, T, E, W](
+def batch_writer[A, T, E, W](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResultWriter[T, E, W]],
     *,
@@ -189,9 +169,9 @@ def batch_w[A, T, E, W](
         return WriterResult(Error(e), merged)
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[list[T], E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[list[T], E, Log[W]]]]
     ) -> LazyCoroResultWriter[list[T], E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return batchM(
         items,
@@ -203,8 +183,7 @@ def batch_w[A, T, E, W](
         wrap=wrap_wr,
     )
 
-
-def batch_all_w[A, T, E, W](
+def batch_all_writer[A, T, E, W](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResultWriter[T, E, W]],
     *,
@@ -221,9 +200,9 @@ def batch_all_w[A, T, E, W](
         return WriterResult(Ok(raws), merged)
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[list[WriterResult[T, E, Log[W]]], NoError, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[list[WriterResult[T, E, Log[W]]], NoError, Log[W]]]]
     ) -> LazyCoroResultWriter[list[WriterResult[T, E, Log[W]]], NoError, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return batch_allM(
         items,
@@ -233,5 +212,4 @@ def batch_all_w[A, T, E, W](
         wrap=wrap_wr,
     )
 
-
-__all__ = ("batch", "batch_all", "batch_w", "batch_all_w", "batchM", "batch_allM")
+__all__ = ("batch", "batch_all", "batch_writer", "batch_all_writer", "batchM", "batch_allM")

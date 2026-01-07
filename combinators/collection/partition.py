@@ -1,9 +1,6 @@
-"""
-Partition combinators
-=====================
+"""Partition combinators
 
-Разделение результатов с extract + wrap паттерном.
-"""
+Partition results with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -16,12 +13,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._types import NoError
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def partitionM[M, T, E, RawIn, RawOut](
     interps: Sequence[Callable[[], Coroutine[typing.Any, typing.Any, RawIn]]],
     *,
@@ -51,12 +43,7 @@ def partitionM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def partition[T, E](
     interps: Sequence[LazyCoroResult[T, E]],
 ) -> LazyCoroResult[tuple[list[T], list[E]], NoError]:
@@ -79,13 +66,8 @@ def partition[T, E](
 
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def partition_w[T, E, W](
+def partition_writer[T, E, W](
     interps: Sequence[LazyCoroResultWriter[T, E, W]],
 ) -> LazyCoroResultWriter[tuple[list[T], list[E]], NoError, W]:
     """Run all, separate into (successes, failures). Merge logs."""
@@ -109,5 +91,4 @@ def partition_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-__all__ = ("partition", "partition_w", "partitionM")
+__all__ = ("partition", "partition_writer", "partitionM")

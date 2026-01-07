@@ -1,9 +1,6 @@
-"""
-Fold combinators
-================
+"""Fold combinators
 
-Effectful fold с extract + wrap паттерном.
-"""
+Effectful fold with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -14,12 +11,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def foldM[M, A, T, E, RawIn, RawOut](
     items: Sequence[A],
     handler: Callable[[T, A], Callable[[], Coroutine[typing.Any, typing.Any, RawIn]]],
@@ -51,12 +43,7 @@ def foldM[M, A, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def fold[A, T, E](
     items: Sequence[A],
     handler: Callable[[T, A], LazyCoroResult[T, E]],
@@ -78,13 +65,8 @@ def fold[A, T, E](
 
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def fold_w[A, T, E, W](
+def fold_writer[A, T, E, W](
     items: Sequence[A],
     handler: Callable[[T, A], LazyCoroResultWriter[T, E, W]],
     *,
@@ -109,5 +91,4 @@ def fold_w[A, T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-__all__ = ("fold", "fold_w", "foldM")
+__all__ = ("fold", "fold_writer", "foldM")

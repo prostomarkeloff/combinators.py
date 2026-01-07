@@ -72,28 +72,55 @@ uv add git+https://github.com/prostomarkeloff/combinators.py.git
 ### Basic Example
 
 ```python
-from combinators import ast, call, lift as L
+from combinators import flow, lift as L
 from kungfu import Ok, Error
 
 # Define pure function
 async def fetch_user(user_id: int) -> Result[User, APIError]:
     return await api.get(f"/users/{user_id}")
 
-# Compose effects
+# Compose effects using lift namespace
 pipeline = (
-    ast(L.call(fetch_user, 42))
+    flow(L.call(fetch_user, 42))
     .retry(times=3, delay_seconds=0.2)
     .timeout(seconds=5.0)
-    .lower()
+    .compile()
 )
 
-# Execute
-result = await pipeline
+# Execute using down namespace
+result = await L.down.to_result(pipeline)
 match result:
     case Ok(user):
         print(f"Success: {user.name}")
     case Error(err):
         print(f"Failed: {err}")
+```
+
+### Writer Monad Example
+
+```python
+from combinators import lift as L, flow_writer
+from combinators.writer import WriterResult, Log
+
+async def fetch_with_logs(uid: int) -> WriterResult[User, Error, Log[str]]:
+    result = await api.get(f"/users/{uid}")
+    return WriterResult(result, Log.of(f"fetched_user_{uid}"))
+
+# Compose with logging
+writer = (
+    flow_writer(L.writer.call(fetch_with_logs, 42))
+    .retry(times=3)
+    .compile()
+    .with_log("operation_complete")
+)
+
+# Execute Writer
+wr = await L.writer.down.to_writer_result(writer)
+match wr.result:
+    case Ok(user):
+        print(f"Success: {user.name}, Logs: {list(wr.log)}")
+    case Error(err):
+        print(f"Error: {err}, Logs: {list(wr.log)}")
 ```
 
 ### Next Steps
@@ -129,10 +156,10 @@ Combinators make effects **visible and composable**:
 ```python
 # ✅ Explicit effects
 result = await (
-    ast(call(fetch))
+    flow(call(fetch))
     .retry(times=3, delay_seconds=0.2)
     .timeout(seconds=5.0)
-    .lower()
+    .compile()
 )
 ```
 
@@ -143,6 +170,36 @@ result = await (
 - 📊 **Typed**: Errors are part of the type signature
 
 ## 💡 Key Concepts
+
+### Lift Namespace Structure
+
+The `lift` module uses a clean namespace for all operations:
+
+```python
+from combinators import lift as L
+
+# Construction (L.up.*)
+L.up.pure(value)         # Create success value
+L.up.fail(error)         # Create error value
+L.up.from_result(result) # From Result type
+L.up.optional(value, error) # From Option
+
+# Function calls
+L.call(func, *args)      # Most common: lift function call
+
+# Execution (L.down.*)
+L.down.to_result(interp) # Get Result[T, E]
+L.down.unsafe(interp)    # Unwrap (raises on Error)
+L.down.or_else(interp, default) # Get value or default
+
+# Writer monad (L.writer.*)
+L.writer.up.pure(value, log=[...])  # Create Writer
+L.writer.up.tell([...])             # Just log
+L.writer.call(func, *args)          # Lift Writer function
+L.writer.down.to_writer_result(w)   # Execute Writer
+```
+
+**Note:** Most functions are also available at the root (`L.pure()`, `L.call()`) for convenience, but the namespace provides clarity.
 
 ### Interp[T, E]
 
@@ -160,7 +217,7 @@ Generic combinators work with any monad via:
 
 - **Extract**: Get `Result[T, E]` from monad's raw type
 - **Logic**: Implement combinator using `Result`
-- **Wrap**: Construct new monad from thunk
+- **Wrap**: Construct new monad from fn
 
 This pattern enables **code reuse** - write combinator logic once, use for multiple monads.
 

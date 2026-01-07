@@ -1,9 +1,6 @@
-"""
-Bracket combinators
-===================
+"""Bracket combinators
 
-Комбинаторы для resource management с extract + wrap паттерном.
-"""
+Combinators for resource management with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -14,12 +11,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def bracketM[M, T, R, E, RawT, RawR](
     acquire: Callable[[], Coroutine[typing.Any, typing.Any, RawT]],
     *,
@@ -56,12 +48,7 @@ def bracketM[M, T, R, E, RawT, RawR](
     
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def bracket[T, R, E](
     acquire: LazyCoroResult[T, E],
     *,
@@ -88,7 +75,6 @@ def bracket[T, R, E](
         combine_err=combine_err,
         wrap=LazyCoroResult,
     )
-
 
 def bracket_on_error[T, R, E](
     acquire: LazyCoroResult[T, E],
@@ -119,7 +105,6 @@ def bracket_on_error[T, R, E](
     
     return LazyCoroResult(run)
 
-
 def with_resource[T, R, E](
     resource: T,
     *,
@@ -140,13 +125,8 @@ def with_resource[T, R, E](
     
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def bracket_w[T, R, E, W](
+def bracket_writer[T, R, E, W](
     acquire: LazyCoroResultWriter[T, E, W],
     *,
     release: Callable[[T], Awaitable[None]],
@@ -173,14 +153,13 @@ def bracket_w[T, R, E, W](
     
     return LazyCoroResultWriter(run)
 
-
-def bracket_on_error_w[T, R, E, W](
+def bracket_on_error_writer[T, R, E, W](
     acquire: LazyCoroResultWriter[T, E, W],
     *,
     release: Callable[[T], Awaitable[None]],
     use: Callable[[T], LazyCoroResultWriter[R, E, W]],
 ) -> LazyCoroResultWriter[R, E, W]:
-    """Like bracket_w, but only releases on error."""
+    """Like bracket_writer, but only releases on error."""
     
     async def run() -> WriterResult[R, E, Log[W]]:
         acquire_wr = await acquire()
@@ -204,8 +183,7 @@ def bracket_on_error_w[T, R, E, W](
     
     return LazyCoroResultWriter(run)
 
-
-def with_resource_w[T, R, E, W](
+def with_resource_writer[T, R, E, W](
     resource: T,
     *,
     release: Callable[[T], Awaitable[None]],
@@ -225,13 +203,12 @@ def with_resource_w[T, R, E, W](
     
     return LazyCoroResultWriter(run)
 
-
 __all__ = (
     "bracket",
     "bracket_on_error",
     "with_resource",
-    "bracket_w",
-    "bracket_on_error_w",
-    "with_resource_w",
+    "bracket_writer",
+    "bracket_on_error_writer",
+    "with_resource_writer",
     "bracketM",
 )

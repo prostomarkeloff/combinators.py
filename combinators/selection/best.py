@@ -1,9 +1,6 @@
-"""
-Best-of combinators
-===================
+"""Best-of combinators
 
-Выбор лучшего результата.
-"""
+Selection of best result."""
 
 from __future__ import annotations
 
@@ -12,9 +9,8 @@ from collections.abc import Sequence
 from kungfu import LazyCoroResult
 
 from .._types import Selector
-from ..concurrency.parallel import parallel, parallel_w
+from ..concurrency.parallel import parallel, parallel_writer
 from ..writer import LazyCoroResultWriter
-
 
 def best_of[T, E](
     interp: LazyCoroResult[T, E],
@@ -26,7 +22,6 @@ def best_of[T, E](
     copies = [interp for _ in range(n)]
     return parallel(*copies).map(lambda values: max(values, key=key))
 
-
 def best_of_many[T, E](
     candidates: Sequence[LazyCoroResult[T, E]],
     *,
@@ -35,8 +30,7 @@ def best_of_many[T, E](
     """Run all candidates, pick best by key."""
     return parallel(*candidates).map(lambda values: max(values, key=key))
 
-
-def best_of_w[T, E, W](
+def best_of_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     n: int,
@@ -44,16 +38,14 @@ def best_of_w[T, E, W](
 ) -> LazyCoroResultWriter[T, E, W]:
     """Run N times, pick best by key. Merges logs."""
     copies = [interp for _ in range(n)]
-    return parallel_w(*copies).map(lambda values: max(values, key=key))
+    return parallel_writer(*copies).map(lambda values: max(values, key=key))
 
-
-def best_of_many_w[T, E, W](
+def best_of_many_writer[T, E, W](
     candidates: Sequence[LazyCoroResultWriter[T, E, W]],
     *,
     key: Selector[T, float],
 ) -> LazyCoroResultWriter[T, E, W]:
     """Run all candidates, pick best by key. Merges logs."""
-    return parallel_w(*candidates).map(lambda values: max(values, key=key))
+    return parallel_writer(*candidates).map(lambda values: max(values, key=key))
 
-
-__all__ = ("best_of", "best_of_many", "best_of_w", "best_of_many_w")
+__all__ = ("best_of", "best_of_many", "best_of_writer", "best_of_many_writer")

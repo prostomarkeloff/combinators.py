@@ -1,9 +1,6 @@
-"""
-Guard combinators
-=================
+"""Guard combinators
 
-Комбинаторы для валидации с extract + wrap паттерном.
-"""
+Combinators for validation with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._types import Predicate
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def ensureM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     *,
@@ -53,7 +45,6 @@ def ensureM[M, T, E, Raw](
                     return combine_err(error(value), raw)
 
     return wrap(run)
-
 
 def rejectM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
@@ -88,12 +79,7 @@ def rejectM[M, T, E, Raw](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def ensure[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -106,7 +92,6 @@ def ensure[T, E](
         return Ok(value) if predicate(value) else Error(error(value))
 
     return interp.then(check)
-
 
 def reject[T, E](
     interp: LazyCoroResult[T, E],
@@ -121,13 +106,8 @@ def reject[T, E](
 
     return interp.then(check)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def ensure_w[T, E, W](
+def ensure_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     predicate: Predicate[T],
@@ -149,9 +129,9 @@ def ensure_w[T, E, W](
         return WriterResult(Error(e), wr.log)
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
     ) -> LazyCoroResultWriter[T, E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return ensureM(
         interp,
@@ -164,8 +144,7 @@ def ensure_w[T, E, W](
         wrap=wrap_wr,
     )
 
-
-def reject_w[T, E, W](
+def reject_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     predicate: Predicate[T],
@@ -187,9 +166,9 @@ def reject_w[T, E, W](
         return WriterResult(Error(e), wr.log)
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
     ) -> LazyCoroResultWriter[T, E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return rejectM(
         interp,
@@ -202,5 +181,4 @@ def reject_w[T, E, W](
         wrap=wrap_wr,
     )
 
-
-__all__ = ("ensure", "reject", "ensure_w", "reject_w", "ensureM", "rejectM")
+__all__ = ("ensure", "reject", "ensure_writer", "reject_writer", "ensureM", "rejectM")

@@ -1,13 +1,13 @@
-from .delay import delay, delay_w, delayM
-from .timeout import timeout, timeout_w, timeoutM
+from .delay import delay, delay_writer, delayM
+from .timeout import timeout, timeout_writer, timeoutM
 
 __all__ = (
     # Delay
     "delay",
-    "delay_w",
+    "delay_writer",
     "delayM",
     # Timeout
     "timeout",
-    "timeout_w",
+    "timeout_writer",
     "timeoutM",
 )

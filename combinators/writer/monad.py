@@ -1,15 +1,12 @@
-"""
-LazyCoroResultWriter Monad
-==========================
+"""LazyCoroResultWriter Monad
 
-Комбинированная монада объединяющая:
-- Lazy (отложенные вычисления)
-- Coro (асинхронность) 
-- Result[T, E] (успех/ошибка)
-- Writer[Log[W]] (аккумуляция логов)
+Combined monad unifying:
+- Lazy (deferred computations)
+- Coro (asynchronous) 
+- Result[T, E] (success/error)
+- Writer[Log[W]] (log accumulation)
 
-Построена поверх kungfu library patterns.
-"""
+Built on top of kungfu library patterns."""
 
 from __future__ import annotations
 
@@ -23,19 +20,12 @@ from kungfu.library.caching import acache
 from .log import Log
 from .result import WriterResult
 
-
 class LazyCoroResultWriter[T, E, W]:
-    """
-    Lazy Coroutine Result Writer Monad.
+    """Lazy Coroutine Result Writer Monad.
     
-    Объединяет четыре эффекта в одну монаду:
+    Combines: Lazy + Coro + Result[T, E] + Writer[Log[W]]
     
-    1. **Lazy** - вычисление откладывается до момента вызова/await
-    2. **Coro** - асинхронное вычисление
-    3. **Result[T, E]** - может успешно завершиться (Ok[T]) или с ошибкой (Error[E])
-    4. **Writer[Log[W]]** - накапливает лог записей типа W
-    
-    Монадические законы:
+    Monadic laws:
     - Left identity: pure(a).then(f) ≡ f(a)
     - Right identity: m.then(pure) ≡ m
     - Associativity: m.then(f).then(g) ≡ m.then(x => f(x).then(g))
@@ -48,25 +38,12 @@ class LazyCoroResultWriter[T, E, W]:
         value: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]],
         /,
     ) -> None:
-        """
-        Create LazyCoroResultWriter from a thunk returning coroutine.
-        
-        Args:
-            value: Zero-argument function returning a coroutine that produces WriterResult
-        """
+        """Create LazyCoroResultWriter from a fn returning coroutine."""
         self._value = value
-
-    # ========================================================================
-    # Constructors
-    # ========================================================================
 
     @staticmethod
     def pure[V, LogT](value: V, log_type: type[LogT]) -> LazyCoroResultWriter[V, typing.Never, LogT]:
-        """
-        Lift a value into the monad with empty log.
-        
-        Applicative pure / Monad return.
-        """
+        """Lift a value into the monad with empty log."""
         _ = log_type  # Used only for type inference
 
         async def wrapper() -> WriterResult[V, typing.Never, Log[LogT]]:
@@ -112,10 +89,7 @@ class LazyCoroResultWriter[T, E, W]:
 
         return LazyCoroResultWriter(wrapper)
 
-
-    # ========================================================================
     # Functor operations
-    # ========================================================================
 
     def map[U](self, f: Callable[[T], U], /) -> LazyCoroResultWriter[U, E, W]:
         """Functor fmap - apply function to success value, preserve log."""
@@ -144,9 +118,7 @@ class LazyCoroResultWriter[T, E, W]:
 
         return LazyCoroResultWriter(wrapper)
 
-    # ========================================================================
     # Monad operations
-    # ========================================================================
 
     def then[U](
         self,
@@ -156,8 +128,8 @@ class LazyCoroResultWriter[T, E, W]:
         """
         Monadic bind (>>=).
         
-        - На Ok: выполняет f, объединяет логи
-        - На Error: short-circuit, сохраняет текущий лог
+        - On Ok: executes f, combines logs
+        - On Error: short-circuit, preserves current log
         """
 
         async def wrapper() -> WriterResult[U, E, Log[W]]:
@@ -194,9 +166,7 @@ class LazyCoroResultWriter[T, E, W]:
 
         return LazyCoroResultWriter(wrapper)
 
-    # ========================================================================
     # Writer operations
-    # ========================================================================
 
     def with_log(self, *entries: W) -> LazyCoroResultWriter[T, E, W]:
         """Add entries to log without changing computation."""
@@ -235,9 +205,7 @@ class LazyCoroResultWriter[T, E, W]:
 
         return LazyCoroResultWriter(wrapper)
 
-    # ========================================================================
     # Utility operations
-    # ========================================================================
 
     def cache(self) -> LazyCoroResultWriter[T, E, W]:
         """Cache the result - only compute once."""
@@ -267,9 +235,7 @@ class LazyCoroResultWriter[T, E, W]:
 
         return LazyCoroResult(wrapper)
 
-    # ========================================================================
     # Protocol methods
-    # ========================================================================
 
     def __call__(self) -> Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]:
         """Execute the lazy computation, returning coroutine."""
@@ -279,12 +245,7 @@ class LazyCoroResultWriter[T, E, W]:
         """Allow direct await on the writer."""
         return self().__await__()
 
-
-# ============================================================================
 # Convenience Constructors
-# ============================================================================
-
-
 def writer_ok[T, W](
     value: T,
     *log_entries: W,
@@ -296,7 +257,6 @@ def writer_ok[T, W](
 
     return LazyCoroResultWriter(wrapper)
 
-
 def writer_error[E, W](
     error: E,
     *log_entries: W,
@@ -307,7 +267,6 @@ def writer_error[E, W](
         return WriterResult(Error(error), Log.of(*log_entries))
 
     return LazyCoroResultWriter(wrapper)
-
 
 __all__ = (
     "LazyCoroResultWriter",

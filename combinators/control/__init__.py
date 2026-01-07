@@ -2,38 +2,38 @@ from .bracket import (
     bracket,
     bracket_on_error,
     with_resource,
-    bracket_w,
-    bracket_on_error_w,
-    with_resource_w,
+    bracket_writer,
+    bracket_on_error_writer,
+    with_resource_writer,
     bracketM,
 )
 from .fallback import (
     fallback,
     fallback_chain,
-    fallback_chain_w,
+    fallback_chain_writer,
     fallback_chainM,
-    fallback_w,
+    fallback_writer,
     fallback_with,
     fallbackM,
 )
 from .guard import (
     ensure,
     reject,
-    ensure_w,
-    reject_w,
+    ensure_writer,
+    reject_writer,
     ensureM,
     rejectM,
 )
 from .recover import (
     recover,
     recover_with,
-    recover_w,
-    recover_with_w,
+    recover_writer,
+    recover_with_writer,
     recoverM,
     recover_withM,
 )
-from .repeat import repeat_until, repeat_until_w, repeat_untilM, RepeatPolicy
-from .retry import retry, retry_w, retryM, RetryPolicy
+from .repeat import repeat_until, repeat_until_writer, repeat_untilM, RepeatPolicy
+from .retry import retry, retry_writer, retryM, RetryPolicy
 
 __all__ = (
     # Policies
@@ -43,38 +43,38 @@ __all__ = (
     "bracket",
     "bracket_on_error",
     "with_resource",
-    "bracket_w",
-    "bracket_on_error_w",
-    "with_resource_w",
+    "bracket_writer",
+    "bracket_on_error_writer",
+    "with_resource_writer",
     "bracketM",
     # Fallback
     "fallback",
     "fallback_chain",
-    "fallback_chain_w",
+    "fallback_chain_writer",
     "fallback_chainM",
-    "fallback_w",
+    "fallback_writer",
     "fallback_with",
     "fallbackM",
     # Guard
     "ensure",
     "reject",
-    "ensure_w",
-    "reject_w",
+    "ensure_writer",
+    "reject_writer",
     "ensureM",
     "rejectM",
     # Recover
     "recover",
     "recover_with",
-    "recover_w",
-    "recover_with_w",
+    "recover_writer",
+    "recover_with_writer",
     "recoverM",
     "recover_withM",
     # Repeat
     "repeat_until",
-    "repeat_until_w",
+    "repeat_until_writer",
     "repeat_untilM",
     # Retry
     "retry",
-    "retry_w",
+    "retry_writer",
     "retryM",
 )

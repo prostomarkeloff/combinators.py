@@ -1,10 +1,7 @@
-"""
-Internal helpers for combinators.
-=================================
+"""Internal helpers for combinators.
 
 Common functions used across multiple combinator modules.
-These are not part of the public API but can be used for creating custom monads.
-"""
+These are not part of the public API but can be used for creating custom monads."""
 
 from __future__ import annotations
 
@@ -15,22 +12,12 @@ from kungfu import Result
 
 from .writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Identity function
-# ============================================================================
-
-
 def identity[T](x: T) -> T:
     """Identity function: returns its argument unchanged."""
     return x
 
-
-# ============================================================================
 # Extract functions (Raw -> Result[T, E])
-# ============================================================================
-
-
 def extract_result[T, E](r: Result[T, E]) -> Result[T, E]:
     """
     Extract Result from Result (identity for LazyCoroResult).
@@ -38,7 +25,6 @@ def extract_result[T, E](r: Result[T, E]) -> Result[T, E]:
     LazyCoroResult's Raw type IS Result[T, E], so extract is identity.
     """
     return r
-
 
 def extract_writer_result[T, E, W](wr: WriterResult[T, E, Log[W]]) -> Result[T, E]:
     """
@@ -48,28 +34,18 @@ def extract_writer_result[T, E, W](wr: WriterResult[T, E, Log[W]]) -> Result[T, 
     """
     return wr.result
 
-
-# ============================================================================
-# Wrap functions (Thunk -> M)
-# ============================================================================
-
-
+# Wrap functions (Fn -> M)
 def wrap_lazy_coro_result_writer[T, E, W](
-    thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
+    fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
 ) -> LazyCoroResultWriter[T, E, W]:
     """
-    Wrap thunk into LazyCoroResultWriter.
+    Wrap fn into LazyCoroResultWriter.
     
     This is the standard wrap function for LazyCoroResultWriter sugar functions.
     """
-    return LazyCoroResultWriter(thunk)
+    return LazyCoroResultWriter(fn)
 
-
-# ============================================================================
 # Log merging helpers
-# ============================================================================
-
-
 def merge_logs[W](logs: Iterable[Log[W]]) -> Log[W]:
     """
     Merge multiple logs into one using monoidal combine.
@@ -83,7 +59,6 @@ def merge_logs[W](logs: Iterable[Log[W]]) -> Log[W]:
         result = result.combine(log)
     return result
 
-
 def merge_writer_logs[T, E, W](wrs: Iterable[WriterResult[T, E, Log[W]]]) -> Log[W]:
     """
     Extract and merge logs from multiple WriterResults.
@@ -94,7 +69,6 @@ def merge_writer_logs[T, E, W](wrs: Iterable[WriterResult[T, E, Log[W]]]) -> Log
             merged_log = merged_log.combine(wr.log)
     """
     return merge_logs(wr.log for wr in wrs)
-
 
 __all__ = (
     # Identity

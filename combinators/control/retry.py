@@ -1,9 +1,6 @@
-"""
-Retry combinators
-=================
+"""Retry combinators
 
-Generic комбинаторы для retry логики с extract + wrap паттерном.
-"""
+Generic combinators for retry logic with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -19,10 +16,8 @@ from .._helpers import extract_writer_result, identity, wrap_lazy_coro_result_wr
 from .._types import Predicate
 from ..writer import LazyCoroResultWriter
 
-
 # BackoffStrategy = (attempt_num, error) -> delay_seconds
 type BackoffStrategy[E] = Callable[[int, E], float]
-
 
 def _fixed_backoff[E](delay: float) -> BackoffStrategy[E]:
     """Same delay every retry."""
@@ -30,7 +25,6 @@ def _fixed_backoff[E](delay: float) -> BackoffStrategy[E]:
         _ = (attempt, error)
         return delay
     return strategy
-
 
 def _exponential_backoff[E](
     initial: float,
@@ -44,7 +38,6 @@ def _exponential_backoff[E](
         return min(delay, max_delay)
     return strategy
 
-
 def _jitter_backoff[E](
     base: float,
     jitter_factor: float = 0.5,
@@ -55,7 +48,6 @@ def _jitter_backoff[E](
         jitter = random.uniform(-jitter_factor, jitter_factor)
         return max(0.0, base * (1.0 + jitter))
     return strategy
-
 
 def _exponential_jitter_backoff[E](
     initial: float,
@@ -71,7 +63,6 @@ def _exponential_jitter_backoff[E](
         jitter = random.uniform(-jitter_factor, jitter_factor)
         return max(0.0, capped * (1.0 + jitter))
     return strategy
-
 
 @dataclass(frozen=True, slots=True)
 class RetryPolicy[E]:
@@ -161,7 +152,6 @@ class RetryPolicy[E]:
             retry_on=retry_on,
         )
 
-
 def _should_retry[E](*, policy: RetryPolicy[E], attempt: int, error: E) -> bool:
     if attempt + 1 >= policy.times:
         return False
@@ -169,16 +159,10 @@ def _should_retry[E](*, policy: RetryPolicy[E], attempt: int, error: E) -> bool:
         return False
     return True
 
-
 def _delay_seconds[E](*, policy: RetryPolicy[E], attempt: int, error: E) -> float:
     return policy.backoff(attempt, error)
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def retryM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     *,
@@ -186,23 +170,7 @@ def retryM[M, T, E, Raw](
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, Raw]]], M],
     policy: RetryPolicy[E],
 ) -> M:
-    """
-    Generic retry combinator.
-    
-    Call interpretation N times until Ok, otherwise return Error.
-    
-    Args:
-        interp: Callable returning Coroutine[Raw]
-        extract: Function to extract Result[T, E] from Raw for retry logic
-        wrap: Constructor to wrap thunk back into monad M
-        policy: Retry policy with backoff strategy
-    
-    Example (LazyCoroResult):
-        retryM(lcr, extract=identity, wrap=LazyCoroResult, policy=...)
-    
-    Example (custom monad):
-        retryM(my_monad, extract=lambda r: r.result, wrap=MyMonad, policy=...)
-    """
+    """Generic retry combinator."""
 
     async def run() -> Raw:
         last: Raw | None = None
@@ -227,12 +195,7 @@ def retryM[M, T, E, Raw](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def retry[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -250,23 +213,13 @@ def retry[T, E](
         policy=policy,
     )
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def retry_w[T, E, W](
+def retry_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     policy: RetryPolicy[E],
 ) -> LazyCoroResultWriter[T, E, W]:
-    """
-    Retry for LazyCoroResultWriter.
-    
-    NOTE: При retry логи теряются между попытками - только финальный результат
-    содержит лог последней попытки.
-    """
+    """Retry for LazyCoroResultWriter."""
     return retryM(
         interp,
         extract=extract_writer_result,
@@ -274,10 +227,9 @@ def retry_w[T, E, W](
         policy=policy,
     )
 
-
 __all__ = (
     "RetryPolicy",
     "retryM",
     "retry",
-    "retry_w",
+    "retry_writer",
 )

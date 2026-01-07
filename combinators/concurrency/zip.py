@@ -1,9 +1,6 @@
-"""
-Zip combinators
-===============
+"""Zip combinators
 
-Комбинаторы для zip с extract + wrap паттерном.
-"""
+Combinators for zip with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -16,12 +13,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._helpers import extract_writer_result, identity, merge_logs
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def zip_parM[M, T, E, RawIn, RawOut](
     *interps: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
     extract: Callable[[RawIn], Result[T, E]],
@@ -51,12 +43,7 @@ def zip_parM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def zip_par[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[tuple[T, ...], E]:
     """
     Run in parallel, return tuple.
@@ -76,7 +63,6 @@ def zip_par[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[tuple[T, ...
         wrap=LazyCoroResult,
     )
 
-
 def zip_with[T, R, E](
     *interps: LazyCoroResult[T, E],
     combiner: Callable[[tuple[T, ...]], R],
@@ -86,13 +72,8 @@ def zip_with[T, R, E](
     """
     return zip_par(*interps).map(combiner)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def zip_par_w[T, E, W](
+def zip_par_writer[T, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
 ) -> LazyCoroResultWriter[tuple[T, ...], E, W]:
     """
@@ -113,9 +94,9 @@ def zip_par_w[T, E, W](
         return WriterResult(Error(e), merged)
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[tuple[T, ...], E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[tuple[T, ...], E, Log[W]]]]
     ) -> LazyCoroResultWriter[tuple[T, ...], E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return zip_parM(
         *interps,
@@ -125,15 +106,13 @@ def zip_par_w[T, E, W](
         wrap=wrap_wr,
     )
 
-
-def zip_with_w[T, R, E, W](
+def zip_with_writer[T, R, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
     combiner: Callable[[tuple[T, ...]], R],
 ) -> LazyCoroResultWriter[R, E, W]:
     """
     Run in parallel, transform results with function. Merge logs.
     """
-    return zip_par_w(*interps).map(combiner)
+    return zip_par_writer(*interps).map(combiner)
 
-
-__all__ = ("zip_par", "zip_with", "zip_par_w", "zip_with_w", "zip_parM")
+__all__ = ("zip_par", "zip_with", "zip_par_writer", "zip_with_writer", "zip_parM")

@@ -1,9 +1,6 @@
-"""
-Recover combinators
-===================
+"""Recover combinators
 
-Комбинаторы для recovery с extract + wrap паттерном.
-"""
+Combinators for recovery with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._types import NoError
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def recoverM[M, T, E, RawIn, RawOut](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
     *,
@@ -47,7 +39,6 @@ def recoverM[M, T, E, RawIn, RawOut](
                 return combine(default, None)
 
     return wrap(run)
-
 
 def recover_withM[M, T, E, RawIn, RawOut](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
@@ -78,12 +69,7 @@ def recover_withM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def recover[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -100,7 +86,6 @@ def recover[T, E](
                 return Ok(default)
 
     return LazyCoroResult(run)
-
 
 def recover_with[T, E](
     interp: LazyCoroResult[T, E],
@@ -119,13 +104,8 @@ def recover_with[T, E](
 
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def recover_w[T, E, W](
+def recover_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     default: T,
@@ -142,8 +122,7 @@ def recover_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-def recover_with_w[T, E, W](
+def recover_with_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     handler: Callable[[E], T],
@@ -160,12 +139,11 @@ def recover_with_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
 __all__ = (
     "recover",
     "recover_with",
-    "recover_w",
-    "recover_with_w",
+    "recover_writer",
+    "recover_with_writer",
     "recoverM",
     "recover_withM",
 )

@@ -4,17 +4,17 @@ from .effects import (
     tap_async,
     tap_err,
     tap_err_async,
-    bimap_tap_w,
-    tap_w,
-    tap_async_w,
-    tap_err_w,
-    tap_err_async_w,
+    bimap_tap_writer,
+    tap_writer,
+    tap_async_writer,
+    tap_err_writer,
+    tap_err_async_writer,
     tapM,
     tap_asyncM,
     tap_errM,
     tap_err_asyncM,
 )
-from .filter import filter_or, filter_or_w
+from .filter import filter_or, filter_or_writer
 
 __all__ = (
     # LazyCoroResult
@@ -25,12 +25,12 @@ __all__ = (
     "tap_err",
     "tap_err_async",
     # LazyCoroResultWriter
-    "bimap_tap_w",
-    "filter_or_w",
-    "tap_w",
-    "tap_async_w",
-    "tap_err_w",
-    "tap_err_async_w",
+    "bimap_tap_writer",
+    "filter_or_writer",
+    "tap_writer",
+    "tap_async_writer",
+    "tap_err_writer",
+    "tap_err_async_writer",
     # Generic
     "tapM",
     "tap_asyncM",

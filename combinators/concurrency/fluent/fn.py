@@ -4,7 +4,6 @@ from typing import Literal
 
 from ..race import RaceOkPolicy
 
-
 def race_ok_policy(
     *,
     cancel_pending: bool = True,

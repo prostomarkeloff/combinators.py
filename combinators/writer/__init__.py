@@ -1,15 +1,12 @@
-"""
-Writer Monad
-============
+"""Writer Monad
 
-LazyCoroResultWriter - комбинированная монада:
-- Lazy (отложенные вычисления)
-- Coro (асинхронность)
-- Result[T, E] (успех/ошибка)
-- Writer[Log[W]] (аккумуляция логов)
+LazyCoroResultWriter - combined monad:
+- Lazy (deferred computations)
+- Coro (asynchronous)
+- Result[T, E] (success/error)
+- Writer[Log[W]] (log accumulation)
 
-Построена поверх kungfu library patterns.
-"""
+Built on top of kungfu library patterns."""
 
 from .log import Log
 from .result import WriterResult

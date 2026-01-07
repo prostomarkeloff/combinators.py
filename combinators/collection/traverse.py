@@ -1,9 +1,6 @@
-"""
-Traverse combinators
-====================
+"""Traverse combinators
 
-Monadic traverse с extract + wrap паттерном.
-"""
+Monadic traverse with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._helpers import extract_writer_result, identity, merge_logs
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def traverseM[M, A, T, E, RawIn, RawOut](
     items: Sequence[A],
     handler: Callable[[A], Callable[[], Coroutine[typing.Any, typing.Any, RawIn]]],
@@ -50,12 +42,7 @@ def traverseM[M, A, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def traverse[A, T, E](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResult[T, E]],
@@ -77,7 +64,6 @@ def traverse[A, T, E](
         wrap=LazyCoroResult,
     )
 
-
 def traverse_par[A, T, E](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResult[T, E]],
@@ -88,13 +74,8 @@ def traverse_par[A, T, E](
     from ..concurrency.batch import batch
     return batch(items, handler, concurrency=concurrency)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def traverse_w[A, T, E, W](
+def traverse_writer[A, T, E, W](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResultWriter[T, E, W]],
 ) -> LazyCoroResultWriter[list[T], E, W]:
@@ -114,9 +95,9 @@ def traverse_w[A, T, E, W](
         return WriterResult(Error(e), merged)
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[list[T], E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[list[T], E, Log[W]]]]
     ) -> LazyCoroResultWriter[list[T], E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return traverseM(
         items,
@@ -127,16 +108,14 @@ def traverse_w[A, T, E, W](
         wrap=wrap_wr,
     )
 
-
-def traverse_par_w[A, T, E, W](
+def traverse_par_writer[A, T, E, W](
     items: Sequence[A],
     handler: Callable[[A], LazyCoroResultWriter[T, E, W]],
     *,
     concurrency: int = 10,
 ) -> LazyCoroResultWriter[list[T], E, W]:
     """Parallel traverse with log merging."""
-    from ..concurrency.batch import batch_w
-    return batch_w(items, handler, concurrency=concurrency)
+    from ..concurrency.batch import batch_writer
+    return batch_writer(items, handler, concurrency=concurrency)
 
-
-__all__ = ("traverse", "traverse_par", "traverse_w", "traverse_par_w", "traverseM")
+__all__ = ("traverse", "traverse_par", "traverse_writer", "traverse_par_writer", "traverseM")

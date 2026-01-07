@@ -1,9 +1,6 @@
-"""
-Gather combinators
-==================
+"""Gather combinators
 
-Комбинаторы для gather с extract + wrap паттерном.
-"""
+Combinators for gather with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -16,12 +13,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._helpers import extract_writer_result, identity
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def gather2M[M, A, B, E, RawA, RawB, RawOut](
     a: Callable[[], Coroutine[typing.Any, typing.Any, RawA]],
     b: Callable[[], Coroutine[typing.Any, typing.Any, RawB]],
@@ -54,7 +46,6 @@ def gather2M[M, A, B, E, RawA, RawB, RawOut](
         return combine_ok(val_a, val_b, raw_a, raw_b)
 
     return wrap(run)
-
 
 def gather3M[M, A, B, C, E, RawA, RawB, RawC, RawOut](
     a: Callable[[], Coroutine[typing.Any, typing.Any, RawA]],
@@ -98,12 +89,7 @@ def gather3M[M, A, B, C, E, RawA, RawB, RawC, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def gather2[A, B, E](
     a: LazyCoroResult[A, E],
     b: LazyCoroResult[B, E],
@@ -127,7 +113,6 @@ def gather2[A, B, E](
         combine_err=combine_err,
         wrap=LazyCoroResult,
     )
-
 
 def gather3[A, B, C, E](
     a: LazyCoroResult[A, E],
@@ -155,13 +140,8 @@ def gather3[A, B, C, E](
         wrap=LazyCoroResult,
     )
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def gather2_w[A, B, E, W](
+def gather2_writer[A, B, E, W](
     a: LazyCoroResultWriter[A, E, W],
     b: LazyCoroResultWriter[B, E, W],
 ) -> LazyCoroResultWriter[tuple[A, B], E, W]:
@@ -178,9 +158,9 @@ def gather2_w[A, B, E, W](
         return WriterResult(Error(e), Log[W]())
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[tuple[A, B], E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[tuple[A, B], E, Log[W]]]]
     ) -> LazyCoroResultWriter[tuple[A, B], E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return gather2M(
         a, b,
@@ -191,8 +171,7 @@ def gather2_w[A, B, E, W](
         wrap=wrap_wr,
     )
 
-
-def gather3_w[A, B, C, E, W](
+def gather3_writer[A, B, C, E, W](
     a: LazyCoroResultWriter[A, E, W],
     b: LazyCoroResultWriter[B, E, W],
     c: LazyCoroResultWriter[C, E, W],
@@ -211,9 +190,9 @@ def gather3_w[A, B, C, E, W](
         return WriterResult(Error(e), Log[W]())
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[tuple[A, B, C], E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[tuple[A, B, C], E, Log[W]]]]
     ) -> LazyCoroResultWriter[tuple[A, B, C], E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return gather3M(
         a, b, c,
@@ -225,5 +204,4 @@ def gather3_w[A, B, C, E, W](
         wrap=wrap_wr,
     )
 
-
-__all__ = ("gather2", "gather3", "gather2_w", "gather3_w", "gather2M", "gather3M")
+__all__ = ("gather2", "gather3", "gather2_writer", "gather3_writer", "gather2M", "gather3M")

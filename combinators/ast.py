@@ -4,12 +4,12 @@ Generic AST for fluent combinator chaining.
 Architecture:
 - FlowM[M, Raw, T, E] - generic Flow parameterized by monad
 - Interpreter[M, Raw] - typeclass with extract + wrap + combinators
-- Flow (LazyCoroResult) and FlowW (LazyCoroResultWriter) - sugar implementations
+- Flow (LazyCoroResult) and FlowWriter (LazyCoroResultWriter) - sugar implementations
 
 For custom monads:
 1. Create your Interpreter with extract, wrap, and combinator functions
 2. Use FlowM directly with your interpreter
-3. Or create your own sugar class following the Flow/FlowW pattern
+3. Or create your own sugar class following the Flow/FlowWriter pattern
 """
 
 from __future__ import annotations
@@ -29,23 +29,10 @@ from .concurrency.race import RaceOkPolicy
 from .concurrency.rate_limit import RateLimitPolicy
 from .writer import LazyCoroResultWriter
 
-
-# ============================================================================
 # Generic Interpreter Protocol
-# ============================================================================
-
-
 @dataclass(frozen=True, slots=True)
 class Interpreter[M, Raw, T, E]:
-    """
-    Typeclass for interpreting AST into a specific monad.
-
-    Users implement this for their custom monads to use FlowM.
-
-    NOTE: This is a simplified interpreter that doesn't handle type-changing
-    operations like timeout (E -> E | TimeoutError). For those, use the
-    concrete Flow/FlowW implementations or handle manually.
-    """
+    """Typeclass for interpreting AST into a specific monad."""
 
     # Core operations
     extract: Callable[[Raw], Result[T, E]]
@@ -58,12 +45,7 @@ class Interpreter[M, Raw, T, E]:
     delay: Callable[[M, float], M]
     rate_limit: Callable[[M, RateLimitPolicy], M]
 
-
-# ============================================================================
 # LazyCoroResult Sugar (Flow) - Existing Implementation
-# ============================================================================
-
-
 class Expr[T, E]:
     """
     AST node that can be lowered into executable LazyCoroResult.
@@ -72,14 +54,12 @@ class Expr[T, E]:
     def lower(self) -> LazyCoroResult[T, E]:
         raise NotImplementedError
 
-
 @dataclass(frozen=True, slots=True)
 class Base[T, E](Expr[T, E]):
     value: LazyCoroResult[T, E]
 
     def lower(self) -> LazyCoroResult[T, E]:
         return self.value
-
 
 @dataclass(frozen=True, slots=True)
 class Retry[T, E](Expr[T, E]):
@@ -90,7 +70,6 @@ class Retry[T, E](Expr[T, E]):
         from .control.retry import retry
         return retry(self.inner.lower(), policy=self.policy)
 
-
 @dataclass(frozen=True, slots=True)
 class Timeout[T, E0](Expr[T, E0 | TimeoutError]):
     inner: Expr[T, E0]
@@ -99,7 +78,6 @@ class Timeout[T, E0](Expr[T, E0 | TimeoutError]):
     def lower(self) -> LazyCoroResult[T, E0 | TimeoutError]:
         from .time.timeout import timeout
         return timeout(self.inner.lower(), seconds=self.seconds)
-
 
 @dataclass(frozen=True, slots=True)
 class Tap[T, E](Expr[T, E]):
@@ -110,7 +88,6 @@ class Tap[T, E](Expr[T, E]):
         from .transform.effects import tap
         return tap(self.inner.lower(), effect=self.effect)
 
-
 @dataclass(frozen=True, slots=True)
 class TapAsync[T, E](Expr[T, E]):
     inner: Expr[T, E]
@@ -119,7 +96,6 @@ class TapAsync[T, E](Expr[T, E]):
     def lower(self) -> LazyCoroResult[T, E]:
         from .transform.effects import tap_async
         return tap_async(self.inner.lower(), effect=self.effect)
-
 
 @dataclass(frozen=True, slots=True)
 class TapErr[T, E](Expr[T, E]):
@@ -130,7 +106,6 @@ class TapErr[T, E](Expr[T, E]):
         from .transform.effects import tap_err
         return tap_err(self.inner.lower(), effect=self.effect)
 
-
 @dataclass(frozen=True, slots=True)
 class TapErrAsync[T, E](Expr[T, E]):
     inner: Expr[T, E]
@@ -139,7 +114,6 @@ class TapErrAsync[T, E](Expr[T, E]):
     def lower(self) -> LazyCoroResult[T, E]:
         from .transform.effects import tap_err_async
         return tap_err_async(self.inner.lower(), effect=self.effect)
-
 
 @dataclass(frozen=True, slots=True)
 class Reject[T, E](Expr[T, E]):
@@ -151,7 +125,6 @@ class Reject[T, E](Expr[T, E]):
         from .control.guard import reject
         return reject(self.inner.lower(), predicate=self.predicate, error=self.error)
 
-
 @dataclass(frozen=True, slots=True)
 class Ensure[T, E](Expr[T, E]):
     inner: Expr[T, E]
@@ -161,7 +134,6 @@ class Ensure[T, E](Expr[T, E]):
     def lower(self) -> LazyCoroResult[T, E]:
         from .control.guard import ensure
         return ensure(self.inner.lower(), predicate=self.predicate, error=self.error)
-
 
 @dataclass(frozen=True, slots=True)
 class RaceOk[T, E](Expr[T, E]):
@@ -173,7 +145,6 @@ class RaceOk[T, E](Expr[T, E]):
         from .concurrency.race import race_ok
         return race_ok(self.inner.lower(), *self.others, policy=self.policy)
 
-
 @dataclass(frozen=True, slots=True)
 class BestOf[T, E](Expr[T, E]):
     inner: Expr[T, E]
@@ -184,7 +155,6 @@ class BestOf[T, E](Expr[T, E]):
         from .selection.best import best_of
         return best_of(self.inner.lower(), n=self.n, key=self.key)
 
-
 @dataclass(frozen=True, slots=True)
 class BestOfMany[T, E](Expr[T, E]):
     candidates: Sequence[LazyCoroResult[T, E]]
@@ -193,7 +163,6 @@ class BestOfMany[T, E](Expr[T, E]):
     def lower(self) -> LazyCoroResult[T, E]:
         from .selection.best import best_of_many
         return best_of_many(self.candidates, key=self.key)
-
 
 @dataclass(frozen=True, slots=True)
 class Delay[T, E](Expr[T, E]):
@@ -204,7 +173,6 @@ class Delay[T, E](Expr[T, E]):
         from .time.delay import delay
         return delay(self.inner.lower(), seconds=self.seconds)
 
-
 @dataclass(frozen=True, slots=True)
 class Recover[T, E](Expr[T, NoError]):
     inner: Expr[T, E]
@@ -214,7 +182,6 @@ class Recover[T, E](Expr[T, NoError]):
         from .control.recover import recover
         return recover(self.inner.lower(), default=self.default)
 
-
 @dataclass(frozen=True, slots=True)
 class RecoverWith[T, E](Expr[T, NoError]):
     inner: Expr[T, E]
@@ -223,7 +190,6 @@ class RecoverWith[T, E](Expr[T, NoError]):
     def lower(self) -> LazyCoroResult[T, NoError]:
         from .control.recover import recover_with
         return recover_with(self.inner.lower(), handler=self.handler)
-
 
 @dataclass(frozen=True, slots=True)
 class RepeatUntil[T, E](Expr[T, E | ConditionNotMetError]):
@@ -235,7 +201,6 @@ class RepeatUntil[T, E](Expr[T, E | ConditionNotMetError]):
         from .control.repeat import repeat_until
         return repeat_until(self.inner.lower(), condition=self.condition, policy=self.policy)
 
-
 @dataclass(frozen=True, slots=True)
 class RateLimit[T, E](Expr[T, E]):
     inner: Expr[T, E]
@@ -244,7 +209,6 @@ class RateLimit[T, E](Expr[T, E]):
     def lower(self) -> LazyCoroResult[T, E]:
         from .concurrency.rate_limit import rate_limit
         return rate_limit(self.inner.lower(), policy=self.policy)
-
 
 @dataclass(frozen=True, slots=True)
 class Bracket[T, R, E](Expr[R, E]):
@@ -256,6 +220,43 @@ class Bracket[T, R, E](Expr[R, E]):
         from .control.bracket import bracket
         return bracket(self.acquire, release=self.release, use=self.use)
 
+@dataclass(frozen=True, slots=True)
+class BimapTap[T, E](Expr[T, E]):
+    inner: Expr[T, E]
+    on_ok: Callable[[T], None]
+    on_err: Callable[[E], None]
+
+    def lower(self) -> LazyCoroResult[T, E]:
+        from .transform.effects import bimap_tap
+        return bimap_tap(self.inner.lower(), on_ok=self.on_ok, on_err=self.on_err)
+
+@dataclass(frozen=True, slots=True)
+class FilterOr[T, E](Expr[T, E]):
+    inner: Expr[T, E]
+    predicate: Predicate[T]
+    error: Callable[[T], E]
+
+    def lower(self) -> LazyCoroResult[T, E]:
+        from .transform.filter import filter_or
+        return filter_or(self.inner.lower(), predicate=self.predicate, error=self.error)
+
+@dataclass(frozen=True, slots=True)
+class Fallback[T, E](Expr[T, E]):
+    inner: Expr[T, E]
+    alternatives: tuple[LazyCoroResult[T, E], ...]
+
+    def lower(self) -> LazyCoroResult[T, E]:
+        from .control.fallback import fallback_chain
+        return fallback_chain(self.inner.lower(), *self.alternatives)
+
+@dataclass(frozen=True, slots=True)
+class Replicate[T, E](Expr[list[T], E]):
+    inner: Expr[T, E]
+    n: int
+
+    def lower(self) -> LazyCoroResult[list[T], E]:
+        from .collection.replicate import replicate
+        return replicate(self.inner.lower(), n=self.n)
 
 @dataclass(frozen=True, slots=True)
 class Flow[T, E]:
@@ -350,17 +351,43 @@ class Flow[T, E]:
             policy = RateLimitPolicy(max_per_second=max_per_second, burst=burst)
         return Flow(RateLimit(self.expr, policy=policy))
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def bimap_tap(
+        self,
+        *,
+        on_ok: Callable[[T], None],
+        on_err: Callable[[E], None],
+    ) -> Flow[T, E]:
+        """Apply side effects to both success and error cases."""
+        return Flow(BimapTap(self.expr, on_ok=on_ok, on_err=on_err))
+
+    def filter_or(
+        self,
+        *,
+        predicate: Predicate[T],
+        error: Callable[[T], E],
+    ) -> Flow[T, E]:
+        """Filter success value by predicate, convert to error if fails."""
+        return Flow(FilterOr(self.expr, predicate=predicate, error=error))
+
+    def fallback(self, *alternatives: LazyCoroResult[T, E]) -> Flow[T, E]:
+        """Try alternatives on error, left-to-right until success."""
+        return Flow(Fallback(self.expr, alternatives=alternatives))
+
+    def replicate(self, *, n: int) -> Flow[list[T], E]:
+        """Run computation N times, collect all results."""
+        return Flow(Replicate(self.expr, n=n))
+
+    def compile(self) -> LazyCoroResult[T, E]:
+        """Compile Flow AST into executable LazyCoroResult."""
         return self.expr.lower()
 
+    def lower(self) -> LazyCoroResult[T, E]:
+        """Alias for compile() - compiles Flow AST into executable LazyCoroResult."""
+        return self.compile()
 
-# ============================================================================
-# LazyCoroResultWriter Sugar (FlowW)
-# ============================================================================
-
-
+# LazyCoroResultWriter Sugar (FlowWriter)
 @dataclass(frozen=True, slots=True)
-class FlowW[T, E, W]:
+class FlowWriter[T, E, W]:
     """
     Fluent builder for chaining combinators (LazyCoroResultWriter).
 
@@ -377,41 +404,41 @@ class FlowW[T, E, W]:
         times: int | None = None,
         delay_seconds: float = 0.0,
         retry_on: Predicate[E] | None = None,
-    ) -> FlowW[T, E, W]:
-        from .control.retry import retry_w
+    ) -> FlowWriter[T, E, W]:
+        from .control.retry import retry_writer
         if policy is None:
             if times is None:
                 raise ValueError("retry(): must provide either 'policy' or 'times'")
             policy = RetryPolicy.fixed(times=times, delay_seconds=delay_seconds, retry_on=retry_on)  # type: ignore[type-var]
-        return FlowW(retry_w(self.value, policy=policy))
+        return FlowWriter(retry_writer(self.value, policy=policy))
 
-    def timeout(self, *, seconds: float) -> FlowW[T, E | TimeoutError, W]:
-        from .time.timeout import timeout_w
-        return FlowW(timeout_w(self.value, seconds=seconds))
+    def timeout(self, *, seconds: float) -> FlowWriter[T, E | TimeoutError, W]:
+        from .time.timeout import timeout_writer
+        return FlowWriter(timeout_writer(self.value, seconds=seconds))
 
-    def tap(self, effect: Callable[[T], None]) -> FlowW[T, E, W]:
-        from .transform.effects import tap_w
-        return FlowW(tap_w(self.value, effect=effect))
+    def tap(self, effect: Callable[[T], None]) -> FlowWriter[T, E, W]:
+        from .transform.effects import tap_writer
+        return FlowWriter(tap_writer(self.value, effect=effect))
 
-    def tap_async(self, effect: Callable[[T], Awaitable[None]]) -> FlowW[T, E, W]:
-        from .transform.effects import tap_async_w
-        return FlowW(tap_async_w(self.value, effect=effect))
+    def tap_async(self, effect: Callable[[T], Awaitable[None]]) -> FlowWriter[T, E, W]:
+        from .transform.effects import tap_async_writer
+        return FlowWriter(tap_async_writer(self.value, effect=effect))
 
-    def tap_err(self, effect: Callable[[E], None]) -> FlowW[T, E, W]:
-        from .transform.effects import tap_err_w
-        return FlowW(tap_err_w(self.value, effect=effect))
+    def tap_err(self, effect: Callable[[E], None]) -> FlowWriter[T, E, W]:
+        from .transform.effects import tap_err_writer
+        return FlowWriter(tap_err_writer(self.value, effect=effect))
 
-    def tap_err_async(self, effect: Callable[[E], Awaitable[None]]) -> FlowW[T, E, W]:
-        from .transform.effects import tap_err_async_w
-        return FlowW(tap_err_async_w(self.value, effect=effect))
+    def tap_err_async(self, effect: Callable[[E], Awaitable[None]]) -> FlowWriter[T, E, W]:
+        from .transform.effects import tap_err_async_writer
+        return FlowWriter(tap_err_async_writer(self.value, effect=effect))
 
-    def ensure(self, predicate: Predicate[T], error: Callable[[T], E]) -> FlowW[T, E, W]:
-        from .control.guard import ensure_w
-        return FlowW(ensure_w(self.value, predicate=predicate, error=error))
+    def ensure(self, predicate: Predicate[T], error: Callable[[T], E]) -> FlowWriter[T, E, W]:
+        from .control.guard import ensure_writer
+        return FlowWriter(ensure_writer(self.value, predicate=predicate, error=error))
 
-    def reject(self, predicate: Predicate[T], error: Callable[[T], E]) -> FlowW[T, E, W]:
-        from .control.guard import reject_w
-        return FlowW(reject_w(self.value, predicate=predicate, error=error))
+    def reject(self, predicate: Predicate[T], error: Callable[[T], E]) -> FlowWriter[T, E, W]:
+        from .control.guard import reject_writer
+        return FlowWriter(reject_writer(self.value, predicate=predicate, error=error))
 
     def race_ok(
         self,
@@ -419,27 +446,27 @@ class FlowW[T, E, W]:
         policy: RaceOkPolicy | None = None,
         cancel_pending: bool = True,
         error_strategy: Literal["first", "last"] = "last",
-    ) -> FlowW[T, E, W]:
-        from .concurrency.race import race_ok_w
+    ) -> FlowWriter[T, E, W]:
+        from .concurrency.race import race_ok_writer
         if policy is None:
             policy = RaceOkPolicy(cancel_pending=cancel_pending, error_strategy=error_strategy)
-        return FlowW(race_ok_w(self.value, *others, policy=policy))
+        return FlowWriter(race_ok_writer(self.value, *others, policy=policy))
 
-    def best_of(self, *, n: int, key: Selector[T, float]) -> FlowW[T, E, W]:
-        from .selection.best import best_of_w
-        return FlowW(best_of_w(self.value, n=n, key=key))
+    def best_of(self, *, n: int, key: Selector[T, float]) -> FlowWriter[T, E, W]:
+        from .selection.best import best_of_writer
+        return FlowWriter(best_of_writer(self.value, n=n, key=key))
 
-    def delay(self, *, seconds: float) -> FlowW[T, E, W]:
-        from .time.delay import delay_w
-        return FlowW(delay_w(self.value, seconds=seconds))
+    def delay(self, *, seconds: float) -> FlowWriter[T, E, W]:
+        from .time.delay import delay_writer
+        return FlowWriter(delay_writer(self.value, seconds=seconds))
 
-    def recover(self, *, default: T) -> FlowW[T, NoError, W]:
-        from .control.recover import recover_w
-        return FlowW(recover_w(self.value, default=default))
+    def recover(self, *, default: T) -> FlowWriter[T, NoError, W]:
+        from .control.recover import recover_writer
+        return FlowWriter(recover_writer(self.value, default=default))
 
-    def recover_with(self, *, handler: Callable[[E], T]) -> FlowW[T, NoError, W]:
-        from .control.recover import recover_with_w
-        return FlowW(recover_with_w(self.value, handler=handler))
+    def recover_with(self, *, handler: Callable[[E], T]) -> FlowWriter[T, NoError, W]:
+        from .control.recover import recover_with_writer
+        return FlowWriter(recover_with_writer(self.value, handler=handler))
 
     def repeat_until(
         self,
@@ -448,13 +475,13 @@ class FlowW[T, E, W]:
         policy: RepeatPolicy | None = None,
         max_rounds: int | None = None,
         delay_seconds: float = 0.0,
-    ) -> FlowW[T, E | ConditionNotMetError, W]:
-        from .control.repeat import repeat_until_w
+    ) -> FlowWriter[T, E | ConditionNotMetError, W]:
+        from .control.repeat import repeat_until_writer
         if policy is None:
             if max_rounds is None:
                 raise ValueError("repeat_until(): must provide either 'policy' or 'max_rounds'")
             policy = RepeatPolicy(max_rounds=max_rounds, delay_seconds=delay_seconds)
-        return FlowW(repeat_until_w(self.value, condition=condition, policy=policy))
+        return FlowWriter(repeat_until_writer(self.value, condition=condition, policy=policy))
 
     def rate_limit(
         self,
@@ -462,49 +489,56 @@ class FlowW[T, E, W]:
         policy: RateLimitPolicy | None = None,
         max_per_second: float | None = None,
         burst: int | None = None,
-    ) -> FlowW[T, E, W]:
-        from .concurrency.rate_limit import rate_limit_w
+    ) -> FlowWriter[T, E, W]:
+        from .concurrency.rate_limit import rate_limit_writer
         if policy is None:
             if max_per_second is None:
                 raise ValueError("rate_limit(): must provide either 'policy' or 'max_per_second'")
             policy = RateLimitPolicy(max_per_second=max_per_second, burst=burst)
-        return FlowW(rate_limit_w(self.value, policy=policy))
+        return FlowWriter(rate_limit_writer(self.value, policy=policy))
 
-    def lower(self) -> LazyCoroResultWriter[T, E, W]:
+    def bimap_tap(
+        self,
+        *,
+        on_ok: Callable[[T], None],
+        on_err: Callable[[E], None],
+    ) -> FlowWriter[T, E, W]:
+        """Apply side effects to both success and error cases."""
+        from .transform.effects import bimap_tap_writer
+        return FlowWriter(bimap_tap_writer(self.value, on_ok=on_ok, on_err=on_err))
+
+    def filter_or(
+        self,
+        *,
+        predicate: Predicate[T],
+        error: Callable[[T], E],
+    ) -> FlowWriter[T, E, W]:
+        """Filter success value by predicate, convert to error if fails."""
+        from .transform.filter import filter_or_writer
+        return FlowWriter(filter_or_writer(self.value, predicate=predicate, error=error))
+
+    def fallback(self, *alternatives: LazyCoroResultWriter[T, E, W]) -> FlowWriter[T, E, W]:
+        """Try alternatives on error, left-to-right until success."""
+        from .control.fallback import fallback_chain_writer
+        return FlowWriter(fallback_chain_writer(self.value, *alternatives))
+
+    def replicate(self, *, n: int) -> FlowWriter[list[T], E, W]:
+        """Run computation N times, collect all results."""
+        from .collection.replicate import replicate_writer
+        return FlowWriter(replicate_writer(self.value, n=n))
+
+    def compile(self) -> LazyCoroResultWriter[T, E, W]:
+        """Compile and return the LazyCoroResultWriter."""
         return self.value
 
+    def lower(self) -> LazyCoroResultWriter[T, E, W]:
+        """Alias for compile() - compiles FlowWriter into executable LazyCoroResultWriter."""
+        return self.compile()
 
-# ============================================================================
 # Generic FlowM for custom monads
-# ============================================================================
-
-
 @dataclass(frozen=True, slots=True)
 class FlowM[M, Raw, T, E]:
-    """
-    Generic fluent builder for any monad following extract + wrap pattern.
-
-    This is the base building block for custom monads. It stores:
-    - value: The current monadic value
-    - extract: Raw -> Result[T, E] to extract result for combinator logic
-    - wrap: Thunk -> M to wrap computation back into monad
-
-    Example for custom monad:
-
-        # Define your interpreter functions
-        def my_extract(raw: MyRaw[T, E]) -> Result[T, E]:
-            return raw.result
-
-        def my_wrap(thunk: Callable[[], Coro[MyRaw[T, E]]]) -> MyMonad[T, E]:
-            return MyMonad(thunk)
-
-        # Create Flow factory
-        def my_flow(value: MyMonad[T, E]) -> FlowM[MyMonad[T, E], MyRaw[T, E], T, E]:
-            return FlowM(value, my_extract, my_wrap, my_retry, my_timeout, ...)
-
-    NOTE: Type-changing operations (timeout, recover) require creating new FlowM
-    with updated type parameters. See Flow/FlowW for reference implementations.
-    """
+    """Generic fluent builder for any monad following extract + wrap pattern."""
 
     value: M
     extract: Callable[[Raw], Result[T, E]]
@@ -641,21 +675,14 @@ class FlowM[M, Raw, T, E]:
     def lower(self) -> M:
         return self.value
 
-
-# ============================================================================
 # Constructor functions
-# ============================================================================
-
-
 def ast[T, E](interp: LazyCoroResult[T, E]) -> Flow[T, E]:
     """Build a Flow (AST) from LazyCoroResult for fluent combinator chaining."""
     return Flow(Base(interp))
 
-
-def ast_w[T, E, W](interp: LazyCoroResultWriter[T, E, W]) -> FlowW[T, E, W]:
-    """Build a FlowW from LazyCoroResultWriter for fluent combinator chaining."""
-    return FlowW(interp)
-
+def ast_writer[T, E, W](interp: LazyCoroResultWriter[T, E, W]) -> FlowWriter[T, E, W]:
+    """Build a FlowWriter from LazyCoroResultWriter for fluent combinator chaining."""
+    return FlowWriter(interp)
 
 def ast_many[T, E](
     candidates: Sequence[LazyCoroResult[T, E]],
@@ -665,16 +692,14 @@ def ast_many[T, E](
     """Build Flow from multiple candidates, selecting best by key."""
     return Flow(BestOfMany(candidates=candidates, key=key))
 
-
-def ast_many_w[T, E, W](
+def ast_many_writer[T, E, W](
     candidates: Sequence[LazyCoroResultWriter[T, E, W]],
     *,
     key: Selector[T, float],
-) -> FlowW[T, E, W]:
-    """Build FlowW from multiple candidates, selecting best by key."""
-    from .selection.best import best_of_many_w
-    return FlowW(best_of_many_w(candidates, key=key))
-
+) -> FlowWriter[T, E, W]:
+    """Build FlowWriter from multiple candidates, selecting best by key."""
+    from .selection.best import best_of_many_writer
+    return FlowWriter(best_of_many_writer(candidates, key=key))
 
 def ast_bracket[T, R, E](
     acquire: LazyCoroResult[T, E],
@@ -685,31 +710,58 @@ def ast_bracket[T, R, E](
     """Start Flow with resource management pattern (acquire → use → release)."""
     return Flow(Bracket(acquire=acquire, release=release, use=use))
 
-
-def ast_bracket_w[T, R, E, W](
+def ast_bracket_writer[T, R, E, W](
     acquire: LazyCoroResultWriter[T, E, W],
     *,
     release: Callable[[T], Awaitable[None]],
     use: Callable[[T], LazyCoroResultWriter[R, E, W]],
-) -> FlowW[R, E, W]:
-    """Start FlowW with resource management pattern (acquire → use → release)."""
-    from .control.bracket import bracket_w
-    return FlowW(bracket_w(acquire, release=release, use=use))
+) -> FlowWriter[R, E, W]:
+    """Start FlowWriter with resource management pattern (acquire → use → release)."""
+    from .control.bracket import bracket_writer
+    return FlowWriter(bracket_writer(acquire, release=release, use=use))
 
+# Primary functions (flow is the main API)
+flow = ast
+flow_writer = ast_writer
+flow_many = ast_many
+flow_many_writer = ast_many_writer
+flow_bracket = ast_bracket
+flow_bracket_writer = ast_bracket_writer
+
+# Aliases: chain
+chain = ast
+chain_writer = ast_writer
+chain_many = ast_many
+chain_many_writer = ast_many_writer
+chain_bracket = ast_bracket
+chain_bracket_writer = ast_bracket_writer
 
 __all__ = (
-    # LazyCoroResult AST
+    # Core types
     "Expr",
     "Flow",
-    "ast",
-    "ast_bracket",
-    "ast_many",
-    # LazyCoroResultWriter AST
-    "FlowW",
-    "ast_w",
-    "ast_bracket_w",
-    "ast_many_w",
-    # Generic AST
+    "FlowWriter",
     "FlowM",
     "Interpreter",
+    # Primary functions
+    "flow",
+    "flow_writer",
+    "flow_many",
+    "flow_many_writer",
+    "flow_bracket",
+    "flow_bracket_writer",
+    # Aliases: chain
+    "chain",
+    "chain_writer",
+    "chain_many",
+    "chain_many_writer",
+    "chain_bracket",
+    "chain_bracket_writer",
+    # Aliases: ast (legacy)
+    "ast",
+    "ast_writer",
+    "ast_many",
+    "ast_many_writer",
+    "ast_bracket",
+    "ast_bracket_writer",
 )

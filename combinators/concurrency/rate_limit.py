@@ -1,9 +1,6 @@
-"""
-Rate limit combinators
-======================
+"""Rate limit combinators
 
-Комбинаторы для rate limiting с extract + wrap паттерном.
-"""
+Combinators for rate limiting with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -16,7 +13,6 @@ from dataclasses import dataclass
 from kungfu import LazyCoroResult
 
 from ..writer import LazyCoroResultWriter, Log, WriterResult
-
 
 @dataclass(frozen=True, slots=True)
 class RateLimitPolicy:
@@ -32,7 +28,6 @@ class RateLimitPolicy:
             raise ValueError("RateLimitPolicy.max_per_second must be > 0")
         if self.burst is not None and self.burst < 1:
             raise ValueError("RateLimitPolicy.burst must be >= 1")
-
 
 class _TokenBucket:
     """Token bucket rate limiter."""
@@ -59,12 +54,7 @@ class _TokenBucket:
             wait_time = (1.0 - self.tokens) / self.max_per_second + 0.001
             await asyncio.sleep(wait_time)
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def rate_limitM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     *,
@@ -85,12 +75,7 @@ def rate_limitM[M, T, E, Raw](
     
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def rate_limit[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -99,13 +84,8 @@ def rate_limit[T, E](
     """Throttle with token bucket."""
     return rate_limitM(interp, policy=policy, wrap=LazyCoroResult)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def rate_limit_w[T, E, W](
+def rate_limit_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     policy: RateLimitPolicy,
@@ -113,11 +93,10 @@ def rate_limit_w[T, E, W](
     """Throttle with token bucket. Preserves log."""
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
     ) -> LazyCoroResultWriter[T, E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return rate_limitM(interp, policy=policy, wrap=wrap_wr)
 
-
-__all__ = ("RateLimitPolicy", "rate_limit", "rate_limit_w", "rate_limitM")
+__all__ = ("RateLimitPolicy", "rate_limit", "rate_limit_writer", "rate_limitM")

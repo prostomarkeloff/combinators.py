@@ -1,9 +1,6 @@
-"""
-Delay combinators
-=================
+"""Delay combinators
 
-Комбинаторы для delay с extract + wrap паттерном.
-"""
+Combinators for delay with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import LazyCoroResult
 
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def delayM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     *,
@@ -40,12 +32,7 @@ def delayM[M, T, E, Raw](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def delay[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -54,13 +41,8 @@ def delay[T, E](
     """Sleep before running."""
     return delayM(interp, seconds=seconds, wrap=LazyCoroResult)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def delay_w[T, E, W](
+def delay_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     seconds: float,
@@ -68,11 +50,10 @@ def delay_w[T, E, W](
     """Sleep before running. Preserves log."""
     
     def wrap_wr(
-        thunk: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
+        fn: Callable[[], Coroutine[typing.Any, typing.Any, WriterResult[T, E, Log[W]]]]
     ) -> LazyCoroResultWriter[T, E, W]:
-        return LazyCoroResultWriter(thunk)
+        return LazyCoroResultWriter(fn)
     
     return delayM(interp, seconds=seconds, wrap=wrap_wr)
 
-
-__all__ = ("delay", "delay_w", "delayM")
+__all__ = ("delay", "delay_writer", "delayM")

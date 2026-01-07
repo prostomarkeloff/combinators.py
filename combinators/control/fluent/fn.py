@@ -3,7 +3,6 @@ from __future__ import annotations
 from ..retry import RetryPolicy
 from ..._types import Predicate
 
-
 def retry_policy[E](
     times: int,
     *,

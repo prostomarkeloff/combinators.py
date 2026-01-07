@@ -1,9 +1,6 @@
-"""
-Validate combinators
-====================
+"""Validate combinators
 
-Валидация с накоплением ошибок.
-"""
+Validation with error accumulation."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def validateM[M, T, E, RawIn, RawOut](
     interps: Sequence[Callable[[], Coroutine[typing.Any, typing.Any, RawIn]]],
     *,
@@ -53,12 +45,7 @@ def validateM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def validate[T, E](
     interps: Sequence[LazyCoroResult[T, E]],
 ) -> LazyCoroResult[list[T], list[E]]:
@@ -83,13 +70,8 @@ def validate[T, E](
 
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def validate_w[T, E, W](
+def validate_writer[T, E, W](
     interps: Sequence[LazyCoroResultWriter[T, E, W]],
 ) -> LazyCoroResultWriter[list[T], list[E], W]:
     """Run all, collect ALL errors with log merging."""
@@ -115,5 +97,4 @@ def validate_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-__all__ = ("validate", "validate_w", "validateM")
+__all__ = ("validate", "validate_writer", "validateM")

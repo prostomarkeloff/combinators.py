@@ -1,9 +1,6 @@
-"""
-Race combinators
-================
+"""Race combinators
 
-Комбинаторы для гонки между вычислениями с extract + wrap паттерном.
-"""
+Combinators for racing between computations with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -18,7 +15,6 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 from .._helpers import extract_writer_result, identity, wrap_lazy_coro_result_writer
 from ..writer import LazyCoroResultWriter
 
-
 @dataclass(frozen=True, slots=True)
 class RaceOkPolicy:
     """Configuration for race_ok: which error to return, whether to cancel."""
@@ -30,12 +26,7 @@ class RaceOkPolicy:
         if self.error_strategy not in ("first", "last"):
             raise ValueError("RaceOkPolicy.error_strategy must be 'first' or 'last'")
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def race_okM[M, T, E, Raw](
     *interps: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     extract: Callable[[Raw], Result[T, E]],
@@ -84,7 +75,6 @@ def race_okM[M, T, E, Raw](
 
     return wrap(run)
 
-
 def raceM[M, T, E, Raw](
     *interps: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, Raw]]], M],
@@ -118,12 +108,7 @@ def raceM[M, T, E, Raw](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def race_ok[T, E](
     *interps: LazyCoroResult[T, E],
     policy: RaceOkPolicy = RaceOkPolicy(),
@@ -136,26 +121,16 @@ def race_ok[T, E](
         policy=policy,
     )
 
-
 def race[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[T, E]:
     """Return first completed result (Ok or Error)."""
     return raceM(*interps, wrap=LazyCoroResult)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def race_ok_w[T, E, W](
+def race_ok_writer[T, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
     policy: RaceOkPolicy = RaceOkPolicy(),
 ) -> LazyCoroResultWriter[T, E, W]:
-    """
-    Run all, return first Ok. If all fail, return chosen error.
-    
-    NOTE: Only winner's log is preserved. Other logs are discarded.
-    """
+    """Run all, return first Ok. If all fail, return chosen error."""
     return race_okM(
         *interps,
         extract=extract_writer_result,
@@ -163,16 +138,10 @@ def race_ok_w[T, E, W](
         policy=policy,
     )
 
-
-def race_w[T, E, W](
+def race_writer[T, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
 ) -> LazyCoroResultWriter[T, E, W]:
-    """
-    Return first completed result.
-    
-    NOTE: Only winner's log is preserved.
-    """
+    """Return first completed result."""
     return raceM(*interps, wrap=wrap_lazy_coro_result_writer)
 
-
-__all__ = ("RaceOkPolicy", "race", "race_ok", "race_w", "race_ok_w", "raceM", "race_okM")
+__all__ = ("RaceOkPolicy", "race", "race_ok", "race_writer", "race_ok_writer", "raceM", "race_okM")

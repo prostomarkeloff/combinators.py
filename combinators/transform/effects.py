@@ -1,10 +1,7 @@
-"""
-Side effects combinators
-========================
+"""Side effects combinators
 
 Effects execute for observation only (logging, metrics, debugging)
-and don't change the computation result.
-"""
+and don't change the computation result."""
 
 from __future__ import annotations
 
@@ -15,12 +12,7 @@ from kungfu import Error, LazyCoroResult, Ok, Result
 
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
-# ============================================================================
 # Generic combinators (extract + wrap pattern)
-# ============================================================================
-
-
 def tapM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     *,
@@ -42,7 +34,6 @@ def tapM[M, T, E, Raw](
         return raw
 
     return wrap(run)
-
 
 def tap_asyncM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
@@ -66,7 +57,6 @@ def tap_asyncM[M, T, E, Raw](
 
     return wrap(run)
 
-
 def tap_errM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     *,
@@ -88,7 +78,6 @@ def tap_errM[M, T, E, Raw](
         return raw
 
     return wrap(run)
-
 
 def tap_err_asyncM[M, T, E, Raw](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
@@ -112,12 +101,7 @@ def tap_err_asyncM[M, T, E, Raw](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def tap[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -135,7 +119,6 @@ def tap[T, E](
         return r
 
     return LazyCoroResult(run)
-
 
 def tap_async[T, E](
     interp: LazyCoroResult[T, E],
@@ -155,7 +138,6 @@ def tap_async[T, E](
 
     return LazyCoroResult(run)
 
-
 def tap_err[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -174,7 +156,6 @@ def tap_err[T, E](
 
     return LazyCoroResult(run)
 
-
 def tap_err_async[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -192,7 +173,6 @@ def tap_err_async[T, E](
         return r
 
     return LazyCoroResult(run)
-
 
 def bimap_tap[T, E](
     interp: LazyCoroResult[T, E],
@@ -213,13 +193,8 @@ def bimap_tap[T, E](
 
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def tap_w[T, E, W](
+def tap_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     effect: Callable[[T], None],
@@ -237,8 +212,7 @@ def tap_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-def tap_async_w[T, E, W](
+def tap_async_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     effect: Callable[[T], Awaitable[None]],
@@ -256,8 +230,7 @@ def tap_async_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-def tap_err_w[T, E, W](
+def tap_err_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     effect: Callable[[E], None],
@@ -275,8 +248,7 @@ def tap_err_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-def tap_err_async_w[T, E, W](
+def tap_err_async_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     effect: Callable[[E], Awaitable[None]],
@@ -294,8 +266,7 @@ def tap_err_async_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-def bimap_tap_w[T, E, W](
+def bimap_tap_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     on_ok: Callable[[T], None],
@@ -314,7 +285,6 @@ def bimap_tap_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
 __all__ = (
     # LazyCoroResult
     "bimap_tap",
@@ -323,11 +293,11 @@ __all__ = (
     "tap_err",
     "tap_err_async",
     # LazyCoroResultWriter
-    "bimap_tap_w",
-    "tap_w",
-    "tap_async_w",
-    "tap_err_w",
-    "tap_err_async_w",
+    "bimap_tap_writer",
+    "tap_writer",
+    "tap_async_writer",
+    "tap_err_writer",
+    "tap_err_async_writer",
     # Generic
     "tapM",
     "tap_asyncM",

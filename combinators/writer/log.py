@@ -1,20 +1,16 @@
-"""
-Log - Моноидный аккумулятор для Writer
-======================================
-"""
+"""Log - Monoidal accumulator for Writer"""
 
 from __future__ import annotations
-
 
 class Log[A](list[A]):
     """
     Log accumulator for Writer monad.
     
-    Обёртка над list с моноидными операциями:
-    - empty: пустой лог (просто Log())
-    - combine: конкатенация логов
+    Wrapper over list with monoidal operations:
+    - empty: empty log (just Log())
+    - combine: log concatenation
     
-    Моноидные законы выполняются:
+    Monoidal laws are satisfied:
     - Left identity: Log().combine(x) == x
     - Right identity: x.combine(Log()) == x  
     - Associativity: (x.combine(y)).combine(z) == x.combine(y.combine(z))
@@ -26,12 +22,7 @@ class Log[A](list[A]):
         return Log[T](items)
 
     def combine(self, other: Log[A], /) -> Log[A]:
-        """
-        Combine two logs (monoidal append).
-        
-        Example:
-            Log.of("a", "b").combine(Log.of("c"))  # Log(["a", "b", "c"])
-        """
+        """Combine two logs (monoidal append)."""
         result: Log[A] = Log(self)
         result.extend(other)
         return result
@@ -45,7 +36,6 @@ class Log[A](list[A]):
         result: Log[A] = Log(self)
         result.append(item)
         return result
-
 
 __all__ = ("Log",)
 

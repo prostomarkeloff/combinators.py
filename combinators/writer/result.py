@@ -1,12 +1,8 @@
-"""
-WriterResult - Result with accumulated log
-==========================================
-"""
+"""WriterResult - Result with accumulated log"""
 
 from __future__ import annotations
 
 from kungfu import Result
-
 
 class WriterResult[T, E, W]:
     """
@@ -38,7 +34,6 @@ class WriterResult[T, E, W]:
 
     def __repr__(self) -> str:
         return f"WriterResult({self._result!r}, log={self._log!r})"
-
 
 __all__ = ("WriterResult",)
 

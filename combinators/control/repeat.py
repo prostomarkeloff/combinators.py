@@ -1,9 +1,6 @@
-"""
-Repeat combinators
-==================
+"""Repeat combinators
 
-Комбинаторы для repeat логики с extract + wrap паттерном.
-"""
+Combinators for repeat logic with extract + wrap pattern."""
 
 from __future__ import annotations
 
@@ -18,7 +15,6 @@ from .._errors import ConditionNotMetError
 from .._types import Predicate
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-
 @dataclass(frozen=True, slots=True)
 class RepeatPolicy:
     """Configuration for repeat_until."""
@@ -32,12 +28,7 @@ class RepeatPolicy:
         if self.delay_seconds < 0.0:
             raise ValueError("RepeatPolicy.delay_seconds must be >= 0")
 
-
-# ============================================================================
 # Generic combinator (extract + wrap pattern)
-# ============================================================================
-
-
 def repeat_untilM[M, T, E, RawIn, RawOut](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
     *,
@@ -76,12 +67,7 @@ def repeat_untilM[M, T, E, RawIn, RawOut](
 
     return wrap(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResult
-# ============================================================================
-
-
 def repeat_until[T, E](
     interp: LazyCoroResult[T, E],
     *,
@@ -107,23 +93,14 @@ def repeat_until[T, E](
 
     return LazyCoroResult(run)
 
-
-# ============================================================================
 # Sugar for LazyCoroResultWriter
-# ============================================================================
-
-
-def repeat_until_w[T, E, W](
+def repeat_until_writer[T, E, W](
     interp: LazyCoroResultWriter[T, E, W],
     *,
     condition: Predicate[T],
     policy: RepeatPolicy,
 ) -> LazyCoroResultWriter[T, E | ConditionNotMetError, W]:
-    """
-    Run until Ok value satisfies condition, or give up.
-    
-    NOTE: Only final attempt's log is preserved.
-    """
+    """Run until Ok value satisfies condition, or give up."""
 
     async def run() -> WriterResult[T, E | ConditionNotMetError, Log[W]]:
         for round_idx in range(policy.max_rounds):
@@ -142,5 +119,4 @@ def repeat_until_w[T, E, W](
 
     return LazyCoroResultWriter(run)
 
-
-__all__ = ("RepeatPolicy", "repeat_until", "repeat_until_w", "repeat_untilM")
+__all__ = ("RepeatPolicy", "repeat_until", "repeat_until_writer", "repeat_untilM")

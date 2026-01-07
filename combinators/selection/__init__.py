@@ -1,5 +1,5 @@
-from .best import best_of, best_of_many, best_of_w, best_of_many_w
-from .vote import vote, vote_w
+from .best import best_of, best_of_many, best_of_writer, best_of_many_writer
+from .vote import vote, vote_writer
 
 __all__ = (
     # LazyCoroResult
@@ -7,7 +7,7 @@ __all__ = (
     "best_of_many",
     "vote",
     # LazyCoroResultWriter
-    "best_of_w",
-    "best_of_many_w",
-    "vote_w",
+    "best_of_writer",
+    "best_of_many_writer",
+    "vote_writer",
 )

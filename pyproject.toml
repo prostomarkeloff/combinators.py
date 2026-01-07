@@ -1,6 +1,6 @@
 [project]
 name = "combinators-py"
-version = "0.1.0"
+version = "0.2.0"
 authors = [{name = "prostomarkeloff", email="prostomarkeloff@was.there" }]
 description = "Declarative way to build systems"
 readme = "README.md"
@@ -10,4 +10,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-kungfu = { git = "https://github.com/timoniq/kungfu.git" }
+kungfu = { git = "https://github.com/timoniq/kungfu.git@a8fd4b5" }
