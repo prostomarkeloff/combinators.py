@@ -1,14 +1,14 @@
 # combinators.py
 
+<div align="center">
+
 **Declarative way to build systems**
 
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Types: pyright strict](https://img.shields.io/badge/types-pyright%20strict-blue)](https://github.com/microsoft/pyright)
 
-<p align="center">
-  <strong>"Make illegal states unrepresentable."</strong>
-</p>
+</div>
 
 ---
 
