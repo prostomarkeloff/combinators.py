@@ -517,6 +517,7 @@ flow.recover_with(*, handler: Callable[[E], T]) -> Flow[T, NoError]
 flow.repeat_until(*, condition: Predicate[T], policy: RepeatPolicy | None = None, max_rounds: int | None = None, delay_seconds: float = 0.0) -> Flow[T, E | ConditionNotMetError]
 flow.rate_limit(*, policy: RateLimitPolicy | None = None, max_per_second: float | None = None, burst: int | None = None) -> Flow[T, E]
 flow.compile() -> Interp[T, E]  # Finalize AST to executable Interp
+flow.lower() -> Interp[T, E]    # Alias for compile()
 
 # Create FlowWriter from LazyCoroResultWriter
 flow_writer(interp: LazyCoroResultWriter[T, E, W]) -> FlowWriter[T, E, W]
@@ -524,6 +525,7 @@ flow_writer(interp: LazyCoroResultWriter[T, E, W]) -> FlowWriter[T, E, W]
 
 # FlowWriter methods (same as Flow, but return FlowWriter)
 flow_writer.compile() -> LazyCoroResultWriter[T, E, W]
+flow_writer.lower() -> LazyCoroResultWriter[T, E, W]  # Alias for compile()
 
 # Bracket pattern
 flow_bracket[T, R, E](acquire: Interp[T, E], *, release: Callable[[T], Awaitable[None]], use: Callable[[T], Interp[R, E]]) -> Flow[R, E]

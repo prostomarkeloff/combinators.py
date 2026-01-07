@@ -51,14 +51,14 @@ class Expr[T, E]:
     AST node that can be lowered into executable LazyCoroResult.
     """
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         raise NotImplementedError
 
 @dataclass(frozen=True, slots=True)
 class Base[T, E](Expr[T, E]):
     value: LazyCoroResult[T, E]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         return self.value
 
 @dataclass(frozen=True, slots=True)
@@ -66,54 +66,54 @@ class Retry[T, E](Expr[T, E]):
     inner: Expr[T, E]
     policy: RetryPolicy[E]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .control.retry import retry
-        return retry(self.inner.lower(), policy=self.policy)
+        return retry(self.inner.compile(), policy=self.policy)
 
 @dataclass(frozen=True, slots=True)
 class Timeout[T, E0](Expr[T, E0 | TimeoutError]):
     inner: Expr[T, E0]
     seconds: float
 
-    def lower(self) -> LazyCoroResult[T, E0 | TimeoutError]:
+    def compile(self) -> LazyCoroResult[T, E0 | TimeoutError]:
         from .time.timeout import timeout
-        return timeout(self.inner.lower(), seconds=self.seconds)
+        return timeout(self.inner.compile(), seconds=self.seconds)
 
 @dataclass(frozen=True, slots=True)
 class Tap[T, E](Expr[T, E]):
     inner: Expr[T, E]
     effect: Callable[[T], None]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .transform.effects import tap
-        return tap(self.inner.lower(), effect=self.effect)
+        return tap(self.inner.compile(), effect=self.effect)
 
 @dataclass(frozen=True, slots=True)
 class TapAsync[T, E](Expr[T, E]):
     inner: Expr[T, E]
     effect: Callable[[T], Awaitable[None]]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .transform.effects import tap_async
-        return tap_async(self.inner.lower(), effect=self.effect)
+        return tap_async(self.inner.compile(), effect=self.effect)
 
 @dataclass(frozen=True, slots=True)
 class TapErr[T, E](Expr[T, E]):
     inner: Expr[T, E]
     effect: Callable[[E], None]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .transform.effects import tap_err
-        return tap_err(self.inner.lower(), effect=self.effect)
+        return tap_err(self.inner.compile(), effect=self.effect)
 
 @dataclass(frozen=True, slots=True)
 class TapErrAsync[T, E](Expr[T, E]):
     inner: Expr[T, E]
     effect: Callable[[E], Awaitable[None]]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .transform.effects import tap_err_async
-        return tap_err_async(self.inner.lower(), effect=self.effect)
+        return tap_err_async(self.inner.compile(), effect=self.effect)
 
 @dataclass(frozen=True, slots=True)
 class Reject[T, E](Expr[T, E]):
@@ -121,9 +121,9 @@ class Reject[T, E](Expr[T, E]):
     predicate: Predicate[T]
     error: Callable[[T], E]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .control.guard import reject
-        return reject(self.inner.lower(), predicate=self.predicate, error=self.error)
+        return reject(self.inner.compile(), predicate=self.predicate, error=self.error)
 
 @dataclass(frozen=True, slots=True)
 class Ensure[T, E](Expr[T, E]):
@@ -131,9 +131,9 @@ class Ensure[T, E](Expr[T, E]):
     predicate: Predicate[T]
     error: Callable[[T], E]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .control.guard import ensure
-        return ensure(self.inner.lower(), predicate=self.predicate, error=self.error)
+        return ensure(self.inner.compile(), predicate=self.predicate, error=self.error)
 
 @dataclass(frozen=True, slots=True)
 class RaceOk[T, E](Expr[T, E]):
@@ -141,9 +141,9 @@ class RaceOk[T, E](Expr[T, E]):
     others: tuple[LazyCoroResult[T, E], ...]
     policy: RaceOkPolicy
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .concurrency.race import race_ok
-        return race_ok(self.inner.lower(), *self.others, policy=self.policy)
+        return race_ok(self.inner.compile(), *self.others, policy=self.policy)
 
 @dataclass(frozen=True, slots=True)
 class BestOf[T, E](Expr[T, E]):
@@ -151,16 +151,16 @@ class BestOf[T, E](Expr[T, E]):
     n: int
     key: Selector[T, float]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .selection.best import best_of
-        return best_of(self.inner.lower(), n=self.n, key=self.key)
+        return best_of(self.inner.compile(), n=self.n, key=self.key)
 
 @dataclass(frozen=True, slots=True)
 class BestOfMany[T, E](Expr[T, E]):
     candidates: Sequence[LazyCoroResult[T, E]]
     key: Selector[T, float]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .selection.best import best_of_many
         return best_of_many(self.candidates, key=self.key)
 
@@ -169,27 +169,27 @@ class Delay[T, E](Expr[T, E]):
     inner: Expr[T, E]
     seconds: float
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .time.delay import delay
-        return delay(self.inner.lower(), seconds=self.seconds)
+        return delay(self.inner.compile(), seconds=self.seconds)
 
 @dataclass(frozen=True, slots=True)
 class Recover[T, E](Expr[T, NoError]):
     inner: Expr[T, E]
     default: T
 
-    def lower(self) -> LazyCoroResult[T, NoError]:
+    def compile(self) -> LazyCoroResult[T, NoError]:
         from .control.recover import recover
-        return recover(self.inner.lower(), default=self.default)
+        return recover(self.inner.compile(), default=self.default)
 
 @dataclass(frozen=True, slots=True)
 class RecoverWith[T, E](Expr[T, NoError]):
     inner: Expr[T, E]
     handler: Callable[[E], T]
 
-    def lower(self) -> LazyCoroResult[T, NoError]:
+    def compile(self) -> LazyCoroResult[T, NoError]:
         from .control.recover import recover_with
-        return recover_with(self.inner.lower(), handler=self.handler)
+        return recover_with(self.inner.compile(), handler=self.handler)
 
 @dataclass(frozen=True, slots=True)
 class RepeatUntil[T, E](Expr[T, E | ConditionNotMetError]):
@@ -197,18 +197,18 @@ class RepeatUntil[T, E](Expr[T, E | ConditionNotMetError]):
     condition: Predicate[T]
     policy: RepeatPolicy
 
-    def lower(self) -> LazyCoroResult[T, E | ConditionNotMetError]:
+    def compile(self) -> LazyCoroResult[T, E | ConditionNotMetError]:
         from .control.repeat import repeat_until
-        return repeat_until(self.inner.lower(), condition=self.condition, policy=self.policy)
+        return repeat_until(self.inner.compile(), condition=self.condition, policy=self.policy)
 
 @dataclass(frozen=True, slots=True)
 class RateLimit[T, E](Expr[T, E]):
     inner: Expr[T, E]
     policy: RateLimitPolicy
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .concurrency.rate_limit import rate_limit
-        return rate_limit(self.inner.lower(), policy=self.policy)
+        return rate_limit(self.inner.compile(), policy=self.policy)
 
 @dataclass(frozen=True, slots=True)
 class Bracket[T, R, E](Expr[R, E]):
@@ -216,7 +216,7 @@ class Bracket[T, R, E](Expr[R, E]):
     release: Callable[[T], Awaitable[None]]
     use: Callable[[T], LazyCoroResult[R, E]]
 
-    def lower(self) -> LazyCoroResult[R, E]:
+    def compile(self) -> LazyCoroResult[R, E]:
         from .control.bracket import bracket
         return bracket(self.acquire, release=self.release, use=self.use)
 
@@ -226,9 +226,9 @@ class BimapTap[T, E](Expr[T, E]):
     on_ok: Callable[[T], None]
     on_err: Callable[[E], None]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .transform.effects import bimap_tap
-        return bimap_tap(self.inner.lower(), on_ok=self.on_ok, on_err=self.on_err)
+        return bimap_tap(self.inner.compile(), on_ok=self.on_ok, on_err=self.on_err)
 
 @dataclass(frozen=True, slots=True)
 class FilterOr[T, E](Expr[T, E]):
@@ -236,27 +236,27 @@ class FilterOr[T, E](Expr[T, E]):
     predicate: Predicate[T]
     error: Callable[[T], E]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .transform.filter import filter_or
-        return filter_or(self.inner.lower(), predicate=self.predicate, error=self.error)
+        return filter_or(self.inner.compile(), predicate=self.predicate, error=self.error)
 
 @dataclass(frozen=True, slots=True)
 class Fallback[T, E](Expr[T, E]):
     inner: Expr[T, E]
     alternatives: tuple[LazyCoroResult[T, E], ...]
 
-    def lower(self) -> LazyCoroResult[T, E]:
+    def compile(self) -> LazyCoroResult[T, E]:
         from .control.fallback import fallback_chain
-        return fallback_chain(self.inner.lower(), *self.alternatives)
+        return fallback_chain(self.inner.compile(), *self.alternatives)
 
 @dataclass(frozen=True, slots=True)
 class Replicate[T, E](Expr[list[T], E]):
     inner: Expr[T, E]
     n: int
 
-    def lower(self) -> LazyCoroResult[list[T], E]:
+    def compile(self) -> LazyCoroResult[list[T], E]:
         from .collection.replicate import replicate
-        return replicate(self.inner.lower(), n=self.n)
+        return replicate(self.inner.compile(), n=self.n)
 
 @dataclass(frozen=True, slots=True)
 class Flow[T, E]:
@@ -379,11 +379,12 @@ class Flow[T, E]:
 
     def compile(self) -> LazyCoroResult[T, E]:
         """Compile Flow AST into executable LazyCoroResult."""
-        return self.expr.lower()
+        return self.expr.compile()
 
     def lower(self) -> LazyCoroResult[T, E]:
         """Alias for compile() - compiles Flow AST into executable LazyCoroResult."""
         return self.compile()
+
 
 # LazyCoroResultWriter Sugar (FlowWriter)
 @dataclass(frozen=True, slots=True)
@@ -535,6 +536,7 @@ class FlowWriter[T, E, W]:
         """Alias for compile() - compiles FlowWriter into executable LazyCoroResultWriter."""
         return self.compile()
 
+
 # Generic FlowM for custom monads
 @dataclass(frozen=True, slots=True)
 class FlowM[M, Raw, T, E]:
@@ -671,6 +673,9 @@ class FlowM[M, Raw, T, E]:
             self._ensure,
             self._reject,
         )
+
+    def compile(self) -> M:
+        return self.value
 
     def lower(self) -> M:
         return self.value
