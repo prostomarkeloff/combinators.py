@@ -48,7 +48,7 @@ from combinators import lift as L, flow
 
 # Pattern 1: Simple pipeline with retry + timeout
 pipeline = (
-    flow(L.call(fetch_user, user_id))
+    flow(L.call(fetch_user, user_id=user_id))
     .retry(times=3, delay_seconds=0.2)
     .timeout(seconds=5.0)
     .compile()
@@ -60,12 +60,12 @@ from combinators import race_ok, fallback_chain
 from combinators.concurrency import RaceOkPolicy
 
 raced = flow(race_ok(
-    L.call(primary.get, key),
-    L.call(replica.get, key),
+    L.call(primary.get, key=key),
+    L.call(replica.get, key=key),
     policy=RaceOkPolicy(cancel_pending=True)
 )).retry(times=3).compile()
 
-result = fallback_chain(raced, L.call(cache.get, key))
+result = fallback_chain(raced, L.call(cache.get, key=key))
 
 # Pattern 3: Writer monad with logging
 from combinators import flow_writer
@@ -76,7 +76,7 @@ async def fetch_with_logs(uid: int) -> WriterResult[User, Error, Log[str]]:
     return WriterResult(result, Log.of(f"fetched:{uid}"))
 
 writer = (
-    flow_writer(L.writer.call(fetch_with_logs, user_id))
+    flow_writer(L.writer.call(fetch_with_logs, uid=user_id))
     .retry(times=3)
     .compile()
     .with_log("operation_complete")
@@ -213,7 +213,21 @@ L.up.catching_async(func: Callable[[], Awaitable[T]], error_type: type[E]) -> In
 ```python
 # Lift function calls (most common pattern)
 L.call(func: Callable[P, Awaitable[Result[T, E]]], *args: P.args, **kwargs: P.kwargs) -> Interp[T, E]
+L.call_catching(func: Callable[P, Awaitable[T]], on_error: Callable[[Exception], E], *args: P.args, **kwargs: P.kwargs) -> Interp[T, E]
 L.wrap_async(fn: Callable[[], Awaitable[Result[T, E]]]) -> Interp[T, E]
+```
+
+**Usage:**
+```python
+# For functions that return Result[T, E]
+user = L.call(api.get_user, user_id=42)
+
+# For functions that raise exceptions (third-party libs)
+user = L.call_catching(
+    http_client.get,
+    on_error=lambda e: APIError(str(e)),
+    url="/users/42",
+)
 ```
 
 #### Decorators

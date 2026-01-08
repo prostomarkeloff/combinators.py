@@ -53,7 +53,7 @@ from . import writer
 from .up import catching, catching_async, fail, from_result, optional, pure
 
 # From call namespace - call functions
-from .call import call, lifted, wrap_async
+from .call import call, call_catching, lifted, wrap_async
 
 # From down namespace - lower monad
 from .down import or_else, to_result, unsafe
@@ -84,6 +84,7 @@ __all__ = (
     "catching_async",
     # Call
     "call",
+    "call_catching",
     "lifted",
     "wrap_async",
     # Down

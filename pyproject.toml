@@ -1,6 +1,6 @@
 [project]
 name = "combinators-py"
-version = "0.2.0"
+version = "0.2.5"
 authors = [{name = "prostomarkeloff", email="prostomarkeloff@was.there" }]
 description = "Declarative way to build systems"
 readme = "README.md"

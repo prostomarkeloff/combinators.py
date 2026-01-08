@@ -258,6 +258,24 @@ class Replicate[T, E](Expr[list[T], E]):
         from .collection.replicate import replicate
         return replicate(self.inner.compile(), n=self.n)
 
+
+@dataclass(frozen=True, slots=True)
+class Map[T, U, E](Expr[U, E]):
+    inner: Expr[T, E]
+    f: Callable[[T], U]
+
+    def compile(self) -> LazyCoroResult[U, E]:
+        return self.inner.compile().map(self.f)
+
+
+@dataclass(frozen=True, slots=True)
+class Then[T, U, E](Expr[U, E]):
+    inner: Expr[T, E]
+    f: Callable[[T], LazyCoroResult[U, E]]
+
+    def compile(self) -> LazyCoroResult[U, E]:
+        return self.inner.compile().then(self.f)
+
 @dataclass(frozen=True, slots=True)
 class Flow[T, E]:
     """
@@ -376,6 +394,14 @@ class Flow[T, E]:
     def replicate(self, *, n: int) -> Flow[list[T], E]:
         """Run computation N times, collect all results."""
         return Flow(Replicate(self.expr, n=n))
+
+    def map[U](self, f: Callable[[T], U]) -> Flow[U, E]:
+        """Transform success value: T -> U."""
+        return Flow(Map(self.expr, f=f))
+
+    def then[U](self, f: Callable[[T], LazyCoroResult[U, E]]) -> Flow[U, E]:
+        """Monadic bind: chain with another computation."""
+        return Flow(Then(self.expr, f=f))
 
     def compile(self) -> LazyCoroResult[T, E]:
         """Compile Flow AST into executable LazyCoroResult."""
@@ -527,6 +553,14 @@ class FlowWriter[T, E, W]:
         """Run computation N times, collect all results."""
         from .collection.replicate import replicate_writer
         return FlowWriter(replicate_writer(self.value, n=n))
+
+    def map[U](self, f: Callable[[T], U]) -> FlowWriter[U, E, W]:
+        """Transform success value: T -> U."""
+        return FlowWriter(self.value.map(f))
+
+    def then[U](self, f: Callable[[T], LazyCoroResultWriter[U, E, W]]) -> FlowWriter[U, E, W]:
+        """Monadic bind: chain with another computation."""
+        return FlowWriter(self.value.then(f))
 
     def compile(self) -> LazyCoroResultWriter[T, E, W]:
         """Compile and return the LazyCoroResultWriter."""
