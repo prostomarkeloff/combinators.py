@@ -22,14 +22,10 @@ Most software is built on a foundation of hope—the hope that the "Happy Path" 
 
 ## Before & After
 
-<table>
-<tr>
-<td width="50%">
-
-**❌ Standard Python: 47 lines of chaos**
+**❌ Standard Python: 25 lines of chaos**
 
 ```python
-async def fetch_with_retry(url):
+async def fetch_with_retry(url: str) -> Data:
     last_error = None
     for attempt in range(3):
         try:
@@ -45,17 +41,13 @@ async def fetch_with_retry(url):
             last_error = e
             await asyncio.sleep(2 ** attempt)
     
-    # Fallback to cache
     try:
-        return await cache.get(url)
+        return await cache.get(url)  # Fallback
     except:
         return DEFAULT_VALUE
 ```
 
-</td>
-<td width="50%">
-
-**✅ Combinators: 12 lines of intent**
+**✅ Combinators: 9 lines of intent**
 
 ```python
 from combinators import flow, lift as L, fallback_chain
@@ -71,11 +63,7 @@ fetch = (
 result = await fallback_chain(fetch, cache_op, L.up.pure(DEFAULT))
 ```
 
-</td>
-</tr>
-</table>
-
-**The difference?** One is *instructions*. The other is *topology*. One hides failure in control flow. The other makes failure a first-class citizen of the type system.
+**The difference?** One is *instructions*. The other is *topology*.
 
 ---
 
