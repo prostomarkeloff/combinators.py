@@ -6,7 +6,7 @@ description = "Declarative way to build systems"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "kungfu",
+    "kungfu-fp",
 ]
 
 [tool.uv.sources]
