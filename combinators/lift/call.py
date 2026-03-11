@@ -30,7 +30,7 @@ def lifted[T, E, **P](
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> Interp[T, E]:
         return wrap_async(lambda: func(*args, **kwargs))
-    
+
     return wrapper
 
 def call[T, E, **P](
@@ -48,14 +48,14 @@ def call_catching[T, E, **P_Catch](
     **kwargs: P_Catch.kwargs,
 ) -> Interp[T, E]:
     """Call async function with arguments, catch exceptions and lift into Interp.
-    
+
     Use this when your function does NOT return Result[T, E] but can raise exceptions.
-    
+
     Example:
         # Function that can raise
         async def fetch_user(user_id: int) -> User:
             return await api.get(f"/users/{user_id}")  # May raise HTTPException
-        
+
         # Lift it with exception catching
         result = L.call_catching(
             fetch_user,
@@ -67,6 +67,7 @@ def call_catching[T, E, **P_Catch](
         lambda: func(*args, **kwargs),
         on_error=on_error,
     )
+
 
 __all__ = (
     "call",
