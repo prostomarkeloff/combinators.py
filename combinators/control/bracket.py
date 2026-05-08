@@ -4,6 +4,7 @@ Combinators for resource management with extract + wrap pattern."""
 
 from __future__ import annotations
 
+import contextlib
 import typing
 from collections.abc import Awaitable, Callable, Coroutine
 
@@ -41,11 +42,9 @@ def bracketM[M, T, R, E, RawT, RawR](
                     use_raw = await use(resource)()
                     return use_raw
                 finally:
-                    try:
+                    with contextlib.suppress(Exception):
                         await release(resource)
-                    except Exception:
-                        pass
-    
+
     return wrap(run)
 
 # Sugar for LazyCoroResult
@@ -97,12 +96,10 @@ def bracket_on_error[T, R, E](
                     case Ok(value):
                         return Ok(value)
                     case Error(e):
-                        try:
+                        with contextlib.suppress(Exception):
                             await release(resource)
-                        except Exception:
-                            pass
                         return Error(e)
-    
+
     return LazyCoroResult(run)
 
 def with_resource[T, R, E](
@@ -118,11 +115,9 @@ def with_resource[T, R, E](
             use_result = await use(resource)()
             return use_result
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 await release(resource)
-            except Exception:
-                pass
-    
+
     return LazyCoroResult(run)
 
 # Sugar for LazyCoroResultWriter
@@ -146,11 +141,9 @@ def bracket_writer[T, R, E, W](
                     merged_log = acquire_wr.log.combine(use_wr.log)
                     return WriterResult(use_wr.result, merged_log)
                 finally:
-                    try:
+                    with contextlib.suppress(Exception):
                         await release(resource)
-                    except Exception:
-                        pass
-    
+
     return LazyCoroResultWriter(run)
 
 def bracket_on_error_writer[T, R, E, W](
@@ -175,12 +168,10 @@ def bracket_on_error_writer[T, R, E, W](
                     case Ok(value):
                         return WriterResult(Ok(value), merged_log)
                     case Error(e):
-                        try:
+                        with contextlib.suppress(Exception):
                             await release(resource)
-                        except Exception:
-                            pass
                         return WriterResult(Error(e), merged_log)
-    
+
     return LazyCoroResultWriter(run)
 
 def with_resource_writer[T, R, E, W](
@@ -196,11 +187,9 @@ def with_resource_writer[T, R, E, W](
             use_wr = await use(resource)()
             return use_wr
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 await release(resource)
-            except Exception:
-                pass
-    
+
     return LazyCoroResultWriter(run)
 
 __all__ = (

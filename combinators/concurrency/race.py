@@ -26,12 +26,15 @@ class RaceOkPolicy:
         if self.error_strategy not in ("first", "last"):
             raise ValueError("RaceOkPolicy.error_strategy must be 'first' or 'last'")
 
+# Frozen-dataclass singleton used as default arg (safe — immutable).
+_DEFAULT_RACE_OK_POLICY = RaceOkPolicy()
+
 # Generic combinators (extract + wrap pattern)
 def race_okM[M, T, E, Raw](
     *interps: Callable[[], Coroutine[typing.Any, typing.Any, Raw]],
     extract: Callable[[Raw], Result[T, E]],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, Raw]]], M],
-    policy: RaceOkPolicy = RaceOkPolicy(),
+    policy: RaceOkPolicy = _DEFAULT_RACE_OK_POLICY,
 ) -> M:
     """
     Generic race_ok combinator.
@@ -111,7 +114,7 @@ def raceM[M, T, E, Raw](
 # Sugar for LazyCoroResult
 def race_ok[T, E](
     *interps: LazyCoroResult[T, E],
-    policy: RaceOkPolicy = RaceOkPolicy(),
+    policy: RaceOkPolicy = _DEFAULT_RACE_OK_POLICY,
 ) -> LazyCoroResult[T, E]:
     """Run all, return first Ok. If all fail, return chosen error."""
     return race_okM(
@@ -128,7 +131,7 @@ def race[T, E](*interps: LazyCoroResult[T, E]) -> LazyCoroResult[T, E]:
 # Sugar for LazyCoroResultWriter
 def race_ok_writer[T, E, W](
     *interps: LazyCoroResultWriter[T, E, W],
-    policy: RaceOkPolicy = RaceOkPolicy(),
+    policy: RaceOkPolicy = _DEFAULT_RACE_OK_POLICY,
 ) -> LazyCoroResultWriter[T, E, W]:
     """Run all, return first Ok. If all fail, return chosen error."""
     return race_okM(

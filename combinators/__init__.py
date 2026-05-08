@@ -11,7 +11,7 @@ Architecture:
 """
 
 # Core types
-from ._types import LCR, NoError, Predicate, Route, Selector
+from ._types import LCR, Interp, NoError, Predicate, Route, Selector
 
 # Internal helpers (for custom monads)
 from . import _helpers
@@ -223,6 +223,7 @@ from ._errors import ConditionNotMetError, TimeoutError
 __all__ = (
     # Types
     "LCR",
+    "Interp",
     "NoError",
     "Predicate",
     "Route",

@@ -153,11 +153,9 @@ class RetryPolicy[E]:
         )
 
 def _should_retry[E](*, policy: RetryPolicy[E], attempt: int, error: E) -> bool:
-    if attempt + 1 >= policy.times:
-        return False
-    if policy.retry_on is not None and not policy.retry_on(error):
-        return False
-    return True
+    return attempt + 1 < policy.times and (
+        policy.retry_on is None or policy.retry_on(error)
+    )
 
 def _delay_seconds[E](*, policy: RetryPolicy[E], attempt: int, error: E) -> float:
     return policy.backoff(attempt, error)

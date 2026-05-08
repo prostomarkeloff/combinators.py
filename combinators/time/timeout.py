@@ -11,15 +11,14 @@ from collections.abc import Callable, Coroutine
 from kungfu import Error, LazyCoroResult, Ok, Result
 
 from .._errors import TimeoutError
-from .._helpers import extract_writer_result, identity
 from ..writer import LazyCoroResultWriter, Log, WriterResult
 
-# Generic combinator (extract + wrap pattern)
-def timeoutM[M, T, E, RawIn, RawOut](
+# Generic combinator (wrap pattern - timeout doesn't need extract since it
+# uses widen to transform Raw directly into the wider RawOut type).
+def timeoutM[M, RawIn, RawOut](
     interp: Callable[[], Coroutine[typing.Any, typing.Any, RawIn]],
     *,
     seconds: float,
-    extract: Callable[[RawIn], Result[T, E]],
     widen: Callable[[RawIn], RawOut],
     on_timeout: Callable[[], RawOut],
     wrap: Callable[[Callable[[], Coroutine[typing.Any, typing.Any, RawOut]]], M],
@@ -59,7 +58,6 @@ def timeout[T, E](
     return timeoutM(
         interp,
         seconds=seconds,
-        extract=identity,
         widen=widen,
         on_timeout=on_timeout,
         wrap=LazyCoroResult,
@@ -95,7 +93,6 @@ def timeout_writer[T, E, W](
     return timeoutM(
         interp,
         seconds=seconds,
-        extract=extract_writer_result,
         widen=widen,
         on_timeout=on_timeout,
         wrap=wrap_wr,
