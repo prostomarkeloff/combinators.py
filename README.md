@@ -230,7 +230,7 @@ result = await read_path # Result[Config, Never]
 `combinators.py` requires Python 3.13+ and the `kungfu` library.
 
 ```bash
-uv add combinators.py
+uv add combinators-py
 ```
 
 ---
